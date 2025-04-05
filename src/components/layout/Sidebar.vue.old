@@ -1,0 +1,337 @@
+<template>
+  <div class="sidebar bg-discord-secondary flex flex-col h-full" :class="[isMobile ? (isOpen ? 'w-64' : 'w-0') : 'w-64']">
+    <div class="p-4 font-semibold text-white flex justify-between items-center">
+      <div>{{ $t('sidebar.channels') }}</div>
+      <button v-if="isMobile && isOpen" @click="toggleSidebar" class="text-discord-text-gray hover:text-white">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+        </svg>
+      </button>
+    </div>
+    
+    <!-- Показываем разделы в соответствии с группами каналов -->
+    <div class="px-3 py-2">
+      <div class="mb-2">
+        <div class="text-xs font-semibold text-discord-text-gray px-2 flex items-center mb-1">
+          <span>УПРАВЛЕНИЕ ОБУЧЕНИЕМ</span>
+        </div>
+        <div class="space-y-0.5">
+          <div 
+            v-for="channel in educationChannels" 
+            :key="channel.id"
+            @click="handleChannelAction(channel.id)"
+            class="channel-item flex items-center px-2 py-1 rounded cursor-pointer"
+            :class="{'bg-discord-dark-hover': currentChannel === channel.id}"
+          >
+            <span v-if="channel.id === 'lecture'" class="mr-2">📝</span>
+            <span v-else-if="channel.id === 'student-management'" class="mr-2">👥</span>
+            <span v-else-if="channel.id === 'assignments'" class="mr-2">📚</span>
+            <span v-else-if="channel.id === 'tests'" class="mr-2">📊</span>
+            <span v-else-if="channel.id === 'resources'" class="mr-2">📂</span>
+            <span class="truncate">{{ channel.name }}</span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="mb-2">
+        <div class="text-xs font-semibold text-discord-text-gray px-2 flex items-center mb-1">
+          <span>АНАЛИТИКА</span>
+        </div>
+        <div class="space-y-0.5">
+          <div 
+            v-for="channel in analyticsChannels" 
+            :key="channel.id"
+            @click="handleChannelAction(channel.id)"
+            class="channel-item flex items-center px-2 py-1 rounded cursor-pointer"
+            :class="{'bg-discord-dark-hover': currentChannel === channel.id}"
+          >
+            <span v-if="channel.id === 'student-progress'" class="mr-2">📈</span>
+            <span v-else-if="channel.id === 'attendance'" class="mr-2">📅</span>
+            <span v-else-if="channel.id === 'reports'" class="mr-2">📑</span>
+            <span class="truncate">{{ channel.name }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="user-controls p-3 bg-discord-dark flex items-center">
+      <div 
+        @click="handleChannelAction('profile')"
+        class="avatar w-8 h-8 rounded-full bg-discord-accent flex items-center justify-center text-white font-bold cursor-pointer hover-effect"
+      >
+        {{ userInitials }}
+      </div>
+      <div class="ml-2 flex-1">
+        <div 
+          @click="handleChannelAction('profile')" 
+          class="text-sm text-white font-medium cursor-pointer hover-effect"
+        >
+          {{ userStore.username }}
+        </div>
+        <div class="text-xs flex items-center">
+          <span class="px-1.5 py-0.5 bg-discord-accent rounded-sm text-white text-xs mr-1">
+            {{ userStore.isTeacher ? $t('auth.teacher') : $t('auth.student') }}
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Кнопка для открытия меню на мобильных устройствах -->
+  <div v-if="isMobile && !isOpen" 
+       class="mobile-sidebar-toggle fixed top-16 left-4 z-50 bg-discord-accent rounded-full p-2 shadow-lg"
+       @click="toggleSidebar">
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+    </svg>
+  </div>
+</template>
+
+<script setup>
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
+import { useUserStore } from '../../stores/user';
+import { useChannelStore } from '../../stores/channels';
+import { useI18n } from 'vue-i18n';
+import { useRouter, useRoute, onBeforeRouteUpdate } from 'vue-router';
+import mitt from 'mitt';
+
+const userStore = useUserStore();
+const channelStore = useChannelStore();
+const { t } = useI18n();
+const router = useRouter();
+const route = useRoute();
+
+// Создаем глобальный Event Bus
+const emitter = mitt();
+
+// Экспортируем Event Bus для использования в других компонентах
+export const channelBus = {
+  on: emitter.on,
+  off: emitter.off,
+  emit: emitter.emit
+};
+
+// Состояние боковой панели
+const isOpen = ref(false);
+const isMobile = ref(false);
+
+// Обработка изменения размера окна
+const checkMobile = () => {
+  isMobile.value = window.innerWidth < 768;
+  if (!isMobile.value) {
+    isOpen.value = true;
+  } else {
+    isOpen.value = false;
+  }
+};
+
+const toggleSidebar = () => {
+  isOpen.value = !isOpen.value;
+};
+
+// Получаем каналы из стора
+const channels = computed(() => channelStore.channels);
+
+const currentChannel = computed({
+  get: () => channelStore.currentChannelId,
+  set: (value) => channelStore.setCurrentChannel(value)
+});
+
+const selectChannel = (channelId) => {
+  handleChannelAction(channelId);
+};
+
+const userInitials = computed(() => {
+  const username = userStore.username || '';
+  return username.substring(0, 2).toUpperCase();
+});
+
+// Наблюдение за изменениями текущего канала
+watch(() => channelStore.currentChannelId, (newChannelId) => {
+  console.log('Current channel ID changed in store:', newChannelId);
+  // Оповещаем все компоненты о смене канала
+  channelBus.emit('channel-changed', newChannelId);
+}, { immediate: true });
+
+const handleChannelAction = (channelId) => {
+  console.log('handleChannelAction called with:', channelId);
+  
+  try {
+    // Если это системный канал, направляем на соответствующий маршрут
+    if (channelId === 'profile') {
+      // Сохраняем текущий канал в query параметре
+      const currentChannelId = channelStore.currentChannelId;
+      
+      console.log('Navigation to profile, saving channel:', currentChannelId);
+      
+      // Переходим на страницу профиля
+      router.push({ 
+        path: '/profile',
+        query: { channel: currentChannelId }
+      }).catch(err => {
+        console.error('Navigation error:', err);
+      });
+      return;
+    }
+    
+    // Если мы уже на правильной странице (teacher или student)
+    const routeName = router.currentRoute.value.name;
+    const correctRouteName = userStore.isTeacher ? 'Teacher' : 'Student';
+    
+    // Устанавливаем канал
+    currentChannel.value = channelId;
+    channelStore.setCurrentChannel(channelId);
+    console.log('Channel set to:', channelId);
+    
+    // Если мы не на правильной странице, перенаправляем
+    if (routeName !== correctRouteName) {
+      console.log('Redirecting to correct page:', correctRouteName);
+      router.push({
+        path: userStore.isTeacher ? '/teacher' : '/student'
+      }).catch(err => {
+        console.error('Navigation error:', err);
+      });
+    }
+  } catch (error) {
+    console.error('Error in handleChannelAction:', error);
+  }
+  
+  // Закрываем сайдбар на мобильных после выбора
+  if (isMobile.value) {
+    isOpen.value = false;
+  }
+};
+
+// Computed свойства для разделения каналов по группам
+const educationChannels = computed(() => {
+  return channels.value.filter(channel => channel.group === 'education');
+});
+
+const analyticsChannels = computed(() => {
+  return channels.value.filter(channel => channel.group === 'analytics');
+});
+
+// Восстанавливаем канал из URL параметра, если он есть
+onMounted(() => {
+  checkMobile();
+  window.addEventListener('resize', checkMobile);
+  
+  // Получаем query-параметр из URL при возврате на основную страницу
+  const route = router.currentRoute.value;
+  const savedChannel = route.query.channel;
+  
+  // Если у нас есть сохраненный канал и мы не на странице профиля,
+  // восстанавливаем его как текущий
+  if (savedChannel && route.name !== 'Profile') {
+    channelStore.setCurrentChannel(savedChannel);
+    
+    // Очищаем параметр из URL при использовании
+    router.replace({ query: {} });
+  }
+});
+
+// Добавляем явную перезагрузку каналов при возврате на основную страницу
+onBeforeRouteUpdate((to, from, next) => {
+  console.log(`Route update: ${from.path} -> ${to.path}`);
+  
+  // Если возвращаемся из ProfileView и есть сохраненный канал,
+  // активируем его
+  if (from.name === 'Profile' && to.name !== 'Profile') {
+    if (from.query.channel) {
+      console.log('Route update: Restoring channel from profile:', from.query.channel);
+      channelStore.setCurrentChannel(from.query.channel);
+    }
+    
+    // Принудительно обновляем список каналов
+    channels.value = [...channelStore.channels];
+  }
+  
+  next();
+});
+
+onUnmounted(() => {
+  window.removeEventListener('resize', checkMobile);
+});
+
+// Компоненты для каналов
+// Экстрактим логику списка каналов в отдельный метод для большей надежности
+const renderChannelItem = (channel) => {
+  // Определяем, какую иконку отображать для канала
+  const getChannelIcon = (channelId) => {
+    if (channelId === 'lecture') return <span class="mr-2">📝</span>;
+    if (channelId === 'student-management') return <span class="mr-2">👥</span>;
+    if (channelId === 'assignments') return <span class="mr-2">📚</span>;
+    if (channelId === 'tests') return <span class="mr-2">📊</span>;
+    if (channelId === 'resources') return <span class="mr-2">📂</span>;
+    if (channelId === 'student-progress') return <span class="mr-2">📈</span>;
+    if (channelId === 'attendance') return <span class="mr-2">📅</span>;
+    if (channelId === 'reports') return <span class="mr-2">📑</span>;
+    return <span class="mr-2">#</span>;
+  };
+  
+  return (
+    <div
+      class={`channel-item flex items-center px-2 py-1 rounded cursor-pointer ${currentChannel.value === channel.id ? 'bg-discord-dark-hover' : ''}`}
+      onClick={() => handleChannelAction(channel.id)}
+    >
+      {getChannelIcon(channel.id)}
+      <span class="truncate">{channel.name}</span>
+    </div>
+  );
+};
+
+// Принудительное обновление каналов при изменениях
+watch(channelStore.currentChannelId, (newId) => {
+  // Обеспечиваем реактивность текущего канала
+  currentChannel.value = newId;
+  console.log('Channel ID changed in Sidebar:', newId);
+});
+</script>
+
+<style scoped>
+.sidebar {
+  transition: width 0.3s ease;
+  overflow: hidden;
+}
+
+.mobile-sidebar-toggle {
+  transition: all 0.3s ease;
+}
+
+.channels-list {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.channels-list::-webkit-scrollbar {
+  width: 4px;
+}
+
+.channels-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.channels-list::-webkit-scrollbar-thumb {
+  background-color: rgba(114, 118, 125, 0.3);
+  border-radius: 2px;
+}
+
+/* Анимация при наведении */
+.channel-item {
+  transition: all 0.2s ease;
+}
+
+.channel-item:hover {
+  background-color: rgba(79, 84, 92, 0.4);
+  transform: translateX(3px);
+}
+
+.hover-effect {
+  transition: all 0.2s ease;
+}
+
+.hover-effect:hover {
+  opacity: 0.8;
+  transform: scale(1.05);
+}
+</style>

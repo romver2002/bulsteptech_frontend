@@ -2,39 +2,20 @@ import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import App from './App.vue'
 import router from './router'
+import './style.css'
 import './assets/main.css'
+import i18n from './i18n'
+
+import { useUserStore } from './stores/user'
+import { useChannelStore } from './stores/channels'
 
 const app = createApp(App)
 const pinia = createPinia()
+
+// Регистрируем плагины
 app.use(pinia)
+app.use(i18n)
 
-// Импортируем хранилище пользователя после инициализации Pinia
-import { useUserStore } from './stores/user'
-
-// Настраиваем router guard после инициализации Pinia
-const userStore = useUserStore()
-
-router.beforeEach((to, from, next) => {
-  // Проверка авторизации
-  if (to.meta.requiresAuth && !userStore.isAuthenticated) {
-    next({ name: 'login' })
-    return
-  }
-  
-  // Если пользователь авторизован и пытается попасть на страницу логина
-  if (to.name === 'login' && userStore.isAuthenticated) {
-    next({ name: userStore.isTeacher ? 'teacher' : 'student' })
-    return
-  }
-  
-  // Проверка прав доступа по роли
-  if (to.meta.roles && !to.meta.roles.includes(userStore.role)) {
-    next({ name: userStore.isTeacher ? 'teacher' : 'student' })
-    return
-  }
-  
-  next()
-})
-
+// Используем роутер и монтируем приложение
 app.use(router)
 app.mount('#app')

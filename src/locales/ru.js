@@ -1,0 +1,83 @@
+export default {
+  common: {
+    login: 'Войти',
+    logout: 'Выйти',
+    profile: 'Профиль',
+    hello: 'Привет',
+    search: 'Поиск',
+    send: 'Отправить',
+    cancel: 'Отмена',
+    save: 'Сохранить',
+    delete: 'Удалить',
+    edit: 'Редактировать',
+    welcome: 'Добро пожаловать',
+    errorOccurred: 'Произошла ошибка',
+    tryAgain: 'Попробовать снова',
+    loading: 'Загрузка...',
+    confirmAction: 'Вы уверены?'
+  },
+  auth: {
+    username: 'Имя пользователя',
+    password: 'Пароль',
+    enterUsername: 'Пожалуйста, введите имя пользователя',
+    loginSuccess: 'Успешный вход',
+    loginError: 'Ошибка входа',
+    role: 'Роль',
+    student: 'Студент',
+    teacher: 'Преподаватель'
+  },
+  sidebar: {
+    channels: 'Каналы',
+    general: 'Общий',
+    questions: 'Вопросы',
+    lecture: 'Лекция',
+    homework: 'Домашние задания',
+    resources: 'Ресурсы',
+    analytics: 'Аналитика',
+    achievements: 'Достижения',
+    teachingManagement: 'Управление обучением',
+    studentManagement: 'Управление студентами',
+    assignments: 'Задания',
+    testsAndPolls: 'Тесты и опросы',
+    learningMaterials: 'Учебные материалы',
+    studentProgress: 'Прогресс студентов',
+    attendance: 'Посещаемость',
+    reports: 'Отчеты',
+    learning: 'Обучение',
+    myProgress: 'Мой прогресс',
+    settings: 'Настройки',
+    myData: 'Мои данные'
+  },
+  profile: {
+    personalCabinet: 'Личный кабинет',
+    accountInfo: 'Данные аккаунта',
+    email: 'Email',
+    status: 'Статус',
+    online: 'онлайн',
+    offline: 'оффлайн',
+    away: 'отошел',
+    memberSince: 'С нами с',
+    notSpecified: 'Не указан',
+    userInfo: 'Информация о пользователе не указана',
+    courses: 'Курсы',
+    myCourses: 'Мои курсы',
+    noCourses: 'У вас пока нет купленных курсов',
+    goToCatalog: 'Перейти в каталог',
+    courseCatalog: 'Каталог курсов',
+    continue: 'Продолжить',
+    cart: 'Корзина',
+    emptyCart: 'Ваша корзина пуста',
+    addToCart: 'Добавьте курсы в корзину, чтобы приобрести их',
+    total: 'Всего',
+    checkout: 'Оформить заказ',
+    myAchievements: 'Мои достижения'
+  },
+  app: {
+    platformName: 'БулСтепТех',
+    educationalPlatform: 'Образовательная платформа'
+  },
+  language: {
+    ru: 'Русский',
+    en: 'Английский'
+  }
+} 

@@ -1,0 +1,83 @@
+export default {
+  common: {
+    login: 'Login',
+    logout: 'Logout',
+    profile: 'Profile',
+    hello: 'Hello',
+    search: 'Search',
+    send: 'Send',
+    cancel: 'Cancel',
+    save: 'Save',
+    delete: 'Delete',
+    edit: 'Edit',
+    welcome: 'Welcome',
+    errorOccurred: 'An error occurred',
+    tryAgain: 'Try again',
+    loading: 'Loading...',
+    confirmAction: 'Are you sure?'
+  },
+  auth: {
+    username: 'Username',
+    password: 'Password',
+    enterUsername: 'Please enter your username',
+    loginSuccess: 'Login successful',
+    loginError: 'Login error',
+    role: 'Role',
+    student: 'Student',
+    teacher: 'Teacher'
+  },
+  sidebar: {
+    channels: 'Channels',
+    general: 'General',
+    questions: 'Questions',
+    lecture: 'Lecture',
+    homework: 'Homework',
+    resources: 'Resources',
+    analytics: 'Analytics',
+    achievements: 'Achievements',
+    teachingManagement: 'Teaching Management',
+    studentManagement: 'Student Management',
+    assignments: 'Assignments',
+    testsAndPolls: 'Tests and Polls',
+    learningMaterials: 'Learning Materials',
+    studentProgress: 'Student Progress',
+    attendance: 'Attendance',
+    reports: 'Reports',
+    learning: 'Learning',
+    myProgress: 'My Progress',
+    settings: 'Settings',
+    myData: 'My Data'
+  },
+  profile: {
+    personalCabinet: 'Personal Cabinet',
+    accountInfo: 'Account Information',
+    email: 'Email',
+    status: 'Status',
+    online: 'online',
+    offline: 'offline',
+    away: 'away',
+    memberSince: 'Member since',
+    notSpecified: 'Not specified',
+    userInfo: 'User information not provided',
+    courses: 'Courses',
+    myCourses: 'My Courses',
+    noCourses: 'You don\'t have any purchased courses yet',
+    goToCatalog: 'Go to catalog',
+    courseCatalog: 'Course Catalog',
+    continue: 'Continue',
+    cart: 'Cart',
+    emptyCart: 'Your cart is empty',
+    addToCart: 'Add courses to the cart to purchase them',
+    total: 'Total',
+    checkout: 'Checkout',
+    myAchievements: 'My Achievements'
+  },
+  app: {
+    platformName: 'BulstepTech',
+    educationalPlatform: 'Educational Platform'
+  },
+  language: {
+    ru: 'Russian',
+    en: 'English'
+  }
+} 

@@ -3,9 +3,22 @@
   line-height: 1.5;
   font-weight: 400;
 
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
+  /* Discord цветовая схема */
+  --color-discord-primary: #36393f;
+  --color-discord-secondary: #2f3136;
+  --color-discord-dark: #202225;
+  --color-discord-dark-hover: #292b2f;
+  --color-discord-accent: #5865f2;
+  --color-discord-accent-hover: #4752c4;
+  --color-discord-success: #3ba55c;
+  --color-discord-warning: #faa61a;
+  --color-discord-error: #ed4245;
+  --color-discord-text-light: #dcddde;
+  --color-discord-text-gray: #8e9297;
+
+  color-scheme: dark;
+  color: var(--color-discord-text-light);
+  background-color: var(--color-discord-primary);
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -15,19 +28,19 @@
 
 a {
   font-weight: 500;
-  color: #646cff;
+  color: var(--color-discord-accent);
   text-decoration: inherit;
 }
 a:hover {
-  color: #535bf2;
+  color: var(--color-discord-accent-hover);
 }
 
 body {
   margin: 0;
   display: flex;
-  place-items: center;
   min-width: 320px;
   min-height: 100vh;
+  background-color: var(--color-discord-primary);
 }
 
 h1 {
@@ -36,44 +49,85 @@ h1 {
 }
 
 button {
-  border-radius: 8px;
+  border-radius: 4px;
   border: 1px solid transparent;
   padding: 0.6em 1.2em;
   font-size: 1em;
   font-weight: 500;
   font-family: inherit;
-  background-color: #1a1a1a;
+  background-color: var(--color-discord-secondary);
   cursor: pointer;
-  transition: border-color 0.25s;
+  transition: all 0.25s;
+  color: var(--color-discord-text-light);
 }
 button:hover {
-  border-color: #646cff;
+  background-color: var(--color-discord-dark-hover);
 }
 button:focus,
 button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+  outline: 2px solid var(--color-discord-accent);
 }
 
 .card {
   padding: 2em;
+  background-color: var(--color-discord-secondary);
+  border-radius: 8px;
 }
 
 #app {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+  width: 100%;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  text-align: left;
 }
 
+/* Убираем стили светлой темы, так как используем темную в стиле Discord */
 @media (prefers-color-scheme: light) {
   :root {
-    color: #213547;
-    background-color: #ffffff;
+    color: var(--color-discord-text-light);
+    background-color: var(--color-discord-primary);
   }
   a:hover {
-    color: #747bff;
+    color: var(--color-discord-accent-hover);
   }
   button {
-    background-color: #f9f9f9;
+    background-color: var(--color-discord-secondary);
   }
+}
+
+/* Дополнительные стили для Tailwind CSS */
+.bg-discord-primary {
+  background-color: var(--color-discord-primary);
+}
+.bg-discord-secondary {
+  background-color: var(--color-discord-secondary);
+}
+.bg-discord-dark {
+  background-color: var(--color-discord-dark);
+}
+.bg-discord-dark-hover {
+  background-color: var(--color-discord-dark-hover);
+}
+.bg-discord-accent {
+  background-color: var(--color-discord-accent);
+}
+.bg-discord-accent-hover {
+  background-color: var(--color-discord-accent-hover);
+}
+.bg-discord-success {
+  background-color: var(--color-discord-success);
+}
+.bg-discord-warning {
+  background-color: var(--color-discord-warning);
+}
+.bg-discord-error {
+  background-color: var(--color-discord-error);
+}
+
+.text-discord-text-light {
+  color: var(--color-discord-text-light);
+}
+.text-discord-text-gray {
+  color: var(--color-discord-text-gray);
 }
