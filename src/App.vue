@@ -3,9 +3,8 @@
     <!-- Контейнер для уведомлений -->
     <notifications-container />
     
-    <!-- Анимированный переход между страницами -->
     <router-view v-slot="{ Component }">
-      <transition name="page" mode="out-in">
+      <transition name="page">
         <component :is="Component" />
       </transition>
     </router-view>
@@ -14,22 +13,22 @@
 
 <script setup>
 import NotificationsContainer from './components/ui/NotificationsContainer.vue';
-import { useChannelStore } from './stores/channels';
 </script>
 
 <style>
 .page-enter-active,
 .page-leave-active {
-  transition: opacity 0.3s ease, transform 0.3s ease;
+  transition: opacity 160ms ease, transform 160ms ease;
 }
 
-.page-enter-from {
-  opacity: 0;
-  transform: translateY(20px);
-}
-
+.page-enter-from,
 .page-leave-to {
   opacity: 0;
-  transform: translateY(-20px);
+  transform: translateY(5px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-enter-active,
+  .page-leave-active { transition-duration: 1ms; }
 }
 </style>

@@ -84,7 +84,7 @@
               <h3 class="text-lg font-semibold">Аналитика</h3>
               <router-link 
                 to="/" 
-                @click.native="goToChannel('analytics')" 
+                @click.prevent="goToChannel('student-progress')"
                 class="text-discord-accent hover:underline text-sm"
               >
                 Подробнее →
@@ -123,7 +123,7 @@
               <h3 class="text-lg font-semibold">Посещаемость</h3>
               <router-link 
                 to="/" 
-                @click.native="goToChannel('attendance')" 
+                @click.prevent="goToChannel('attendance')"
                 class="text-discord-accent hover:underline text-sm"
               >
                 Подробнее →
@@ -164,7 +164,7 @@
             <h3 class="text-lg font-semibold">Достижения</h3>
             <router-link 
               to="/" 
-              @click.native="goToChannel('achievements')" 
+              @click.prevent="goToChannel('achievements')"
               class="text-discord-accent hover:underline text-sm"
             >
               Все достижения →
@@ -192,7 +192,7 @@
           <div class="text-5xl mb-4">📚</div>
           <h4 class="text-xl font-semibold mb-2">У вас пока нет купленных курсов</h4>
           <p class="text-discord-text-gray mb-4">Просмотрите наш каталог курсов и выберите что-то интересное для себя</p>
-          <button class="bg-discord-accent hover:bg-discord-accent-hover text-white py-2 px-4 rounded-md">
+          <button @click="goToChannel('resources')" class="bg-discord-accent hover:bg-discord-accent-hover text-white py-2 px-4 rounded-md">
             Перейти в каталог
           </button>
         </div>
@@ -200,8 +200,8 @@
         <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <div v-for="course in enrolledCourses" :key="course.id" class="course-card bg-discord-secondary rounded-lg overflow-hidden">
             <div class="h-32 bg-discord-dark flex items-center justify-center">
-              <img v-if="course.image" :src="course.image" alt="Course image" class="w-full h-full object-cover">
-              <div v-else class="text-4xl">🎓</div>
+              <img v-if="course.image" :src="course.image" :alt="course.title" loading="lazy" decoding="async" width="300" height="200" class="w-full h-full object-cover">
+              <div v-else class="flex h-full w-full items-center justify-center bg-gradient-to-br from-indigo-500/30 via-violet-500/20 to-emerald-400/20 text-4xl">🎓</div>
             </div>
             <div class="p-4">
               <h4 class="font-semibold text-lg mb-1">{{ course.title }}</h4>
@@ -212,7 +212,7 @@
                 </div>
                 <span class="text-xs text-discord-text-gray">{{ course.progress }}%</span>
               </div>
-              <button class="mt-3 w-full bg-discord-dark hover:bg-discord-dark-hover text-white py-1.5 px-3 rounded text-sm">
+              <button @click="continueCourse(course)" class="mt-3 w-full bg-discord-dark hover:bg-discord-dark-hover text-white py-1.5 px-3 rounded text-sm">
                 Продолжить
               </button>
             </div>
@@ -234,7 +234,7 @@
             </div>
             <div class="flex items-center">
               <span class="font-semibold mr-4">{{ course.price }}₽</span>
-              <button class="text-discord-text-gray hover:text-discord-error">
+              <button @click="removeFromCart(course.id)" class="text-discord-text-gray hover:text-discord-error" :aria-label="`Удалить ${course.title} из корзины`">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                   <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
                 </svg>
@@ -247,7 +247,7 @@
               <p class="text-sm text-discord-text-gray">Всего</p>
               <p class="font-semibold text-lg">{{ totalCartPrice }}₽</p>
             </div>
-            <button class="bg-discord-accent hover:bg-discord-accent-hover text-white py-2 px-4 rounded-md">
+            <button @click="checkout" class="bg-discord-accent hover:bg-discord-accent-hover text-white py-2 px-4 rounded-md">
               Оформить заказ
             </button>
           </div>
@@ -302,7 +302,7 @@ const error = ref(null);
 // Метод для навигации к каналу
 const goToChannel = (channelId) => {
   channelStore.setCurrentChannel(channelId);
-  router.push('/');
+  router.push({ name: userStore.isTeacher ? 'Teacher' : 'Student' });
 };
 
 // Тестовые данные для профиля
@@ -322,14 +322,14 @@ const enrolledCourses = ref([
     id: 1, 
     title: 'Основы Vue.js',
     instructor: 'Иван Петров', 
-    image: 'https://via.placeholder.com/300x200?text=Vue+Basic',
+    image: null,
     progress: 75
   },
   { 
     id: 2, 
     title: 'Продвинутый Vue.js',
     instructor: 'Иван Петров',
-    image: 'https://via.placeholder.com/300x200?text=Vue+Advanced',
+    image: null,
     progress: 40
   }
 ]);
@@ -423,6 +423,26 @@ const statusColor = computed(() => {
   return 'bg-discord-text-gray';
 });
 
+const continueCourse = (course) => {
+  channelStore.setCurrentChannel('lecture');
+  notificationStore.info(`Продолжаем «${course.title}» с отметки ${course.progress}%`, 'Курс открыт');
+  router.push({ name: userStore.isTeacher ? 'Teacher' : 'Student' });
+};
+
+const removeFromCart = (courseId) => {
+  const course = cartCourses.value.find(item => item.id === courseId);
+  cartCourses.value = cartCourses.value.filter(item => item.id !== courseId);
+  if (course) notificationStore.info(`«${course.title}» удалён из корзины`);
+};
+
+const checkout = () => {
+  if (!cartCourses.value.length) return;
+  const purchased = cartCourses.value.map(course => ({ ...course, progress: 0, image: null }));
+  enrolledCourses.value.push(...purchased);
+  cartCourses.value = [];
+  notificationStore.success('Курсы добавлены в ваш профиль', 'Заказ оформлен');
+};
+
 // Methods
 const loadUserData = () => {
   isLoading.value = true;
@@ -440,7 +460,7 @@ const loadUserData = () => {
       status: 'online',
       achievements: [1, 3, 6]
     };
-  }, 1000);
+  }, 260);
 };
 
 const formatDate = (date) => {

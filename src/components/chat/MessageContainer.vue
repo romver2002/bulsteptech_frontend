@@ -1,84 +1,146 @@
 <template>
-  <div class="message-container flex flex-col h-full">
-    <div class="channel-header border-b border-discord-dark-hover px-4 py-3 flex items-center">
-      <div class="channel-icon mr-2">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-discord-text-gray" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+  <div class="message-container flex flex-col h-full rounded-2xl overflow-hidden relative">
+    <div class="channel-header border-b border-white/10 px-6 py-4 flex items-center bg-black/20 backdrop-blur-md relative z-10 shadow-sm">
+      <div class="channel-icon mr-3 w-8 h-8 rounded-lg bg-indigo-500/20 flex items-center justify-center text-indigo-400 border border-indigo-500/30">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
         </svg>
       </div>
-      <h2 class="channel-name font-medium text-white">{{ currentChannel.name }}</h2>
-      <div class="channel-description ml-2 text-sm text-discord-text-gray hidden md:block">
+      <h2 class="channel-name font-bold text-white tracking-wide text-lg">{{ currentChannel.name }}</h2>
+      <div class="channel-description ml-4 text-sm text-gray-400 font-medium hidden md:block border-l border-white/10 pl-4">
         {{ currentChannel.description || 'Канал для общения' }}
       </div>
       <div class="flex-grow"></div>
       <div class="channel-actions flex items-center space-x-2">
-        <button class="action-button p-2 rounded-md text-discord-text-gray hover:text-discord-text-light hover:bg-discord-dark-hover">
+        <button
+          type="button"
+          class="action-button p-2 rounded-xl text-gray-400 hover:text-white hover:bg-white/10 transition-colors border border-transparent hover:border-white/10"
+          :class="searchOpen ? 'bg-indigo-500/15 text-indigo-300 border-indigo-400/20' : ''"
+          :aria-pressed="searchOpen"
+          aria-label="Поиск по сообщениям"
+          @click="searchOpen = !searchOpen"
+        >
           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
         </button>
-        <button class="action-button p-2 rounded-md text-discord-text-gray hover:text-discord-text-light hover:bg-discord-dark-hover">
+        <button
+          type="button"
+          class="action-button p-2 rounded-xl text-gray-400 hover:text-white hover:bg-white/10 transition-colors border border-transparent hover:border-white/10"
+          :class="notificationsEnabled ? 'text-emerald-300' : 'text-amber-300 bg-amber-500/10'"
+          :aria-pressed="notificationsEnabled"
+          :aria-label="notificationsEnabled ? 'Отключить уведомления канала' : 'Включить уведомления канала'"
+          @click="toggleNotifications"
+        >
           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
           </svg>
         </button>
-        <button class="action-button p-2 rounded-md text-discord-text-gray hover:text-discord-text-light hover:bg-discord-dark-hover">
+        <button
+          type="button"
+          class="action-button p-2 rounded-xl text-gray-400 hover:text-white hover:bg-white/10 transition-colors border border-transparent hover:border-white/10"
+          :class="showChannelInfo ? 'bg-indigo-500/15 text-indigo-300 border-indigo-400/20' : ''"
+          :aria-pressed="showChannelInfo"
+          aria-label="Информация о канале"
+          @click="showChannelInfo = !showChannelInfo"
+        >
           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
           </svg>
         </button>
       </div>
     </div>
+
+    <transition name="chat-toolbar">
+      <div v-if="searchOpen" class="border-b border-white/10 bg-black/15 px-4 py-3">
+        <label class="mx-auto flex max-w-2xl items-center gap-3 rounded-xl border border-white/10 bg-black/25 px-4 py-2 focus-within:border-indigo-400/40">
+          <span class="text-sm text-gray-400">Найти</span>
+          <input v-model.trim="searchQuery" type="search" class="min-w-0 flex-1 bg-transparent text-sm text-white outline-none placeholder:text-gray-600" placeholder="Имя или текст сообщения" autofocus>
+          <button v-if="searchQuery" type="button" class="rounded-md px-2 text-gray-400 hover:bg-white/10 hover:text-white" aria-label="Очистить поиск" @click="searchQuery = ''">×</button>
+        </label>
+      </div>
+    </transition>
+
+    <transition name="chat-toolbar">
+      <div v-if="showChannelInfo" class="border-b border-indigo-400/15 bg-indigo-500/10 px-6 py-3 text-sm text-indigo-100">
+        <strong>#{{ currentChannel.name }}</strong>
+        <span class="ml-2 text-indigo-200/70">{{ currentChannel.description || 'Учебный канал группы' }} · {{ messages.length }} сообщений загружено</span>
+      </div>
+    </transition>
     
-    <div class="messages-wrapper flex-grow overflow-y-auto p-4">
+    <div ref="messagesWrapper" class="messages-wrapper flex-grow overflow-y-auto p-6 scroll-smooth custom-scrollbar relative">
+      <div class="absolute inset-0 bg-gradient-to-b from-black/10 via-transparent to-transparent pointer-events-none"></div>
       <MessageList 
-        :messages="messages" 
+        :messages="visibleMessages"
         :loading="loading" 
-        :has-more-messages="hasMoreMessages" 
+        :has-more-messages="!searchQuery && hasMoreMessages"
         @load-more="loadMoreMessages"
         @toggle-reaction="handleToggleReaction"
         @open-attachment="handleOpenAttachment"
       />
     </div>
     
-    <div class="input-wrapper mt-auto">
-      <ChatInput 
+    <div class="input-wrapper mt-auto p-4 pt-2">
+      <div v-if="isReadOnly" class="flex items-center gap-3 rounded-2xl border border-amber-400/15 bg-amber-500/5 p-4">
+        <div class="grid h-10 w-10 flex-none place-items-center rounded-xl bg-amber-500/10 text-amber-300">
+          <svg class="h-5 w-5 fill-none stroke-current" viewBox="0 0 24 24" aria-hidden="true">
+            <rect x="5" y="10" width="14" height="11" rx="2" />
+            <path d="M8 10V7a4 4 0 0 1 8 0v3" />
+          </svg>
+        </div>
+        <div>
+          <strong class="block text-sm text-amber-100">Канал открыт только для чтения</strong>
+          <span class="mt-1 block text-xs text-amber-200/50">Публиковать объявления может преподаватель.</span>
+        </div>
+      </div>
+      <ChatInput
+        v-else
         :channel-id="currentChannel.id" 
         :placeholder="getInputPlaceholder" 
         @send-message="handleSendMessage" 
       />
     </div>
     
-    <div v-if="showAttachmentModal" class="attachment-modal fixed inset-0 flex items-center justify-center z-30">
-      <div class="modal-overlay fixed inset-0 bg-black opacity-70" @click="closeAttachmentModal"></div>
-      <div class="modal-content z-40 max-w-4xl max-h-[90vh]">
-        <div class="modal-header bg-discord-dark p-4 flex justify-between items-center rounded-t-md">
-          <h3 class="text-white font-medium">{{ currentAttachment.name }}</h3>
-          <button @click="closeAttachmentModal" class="text-discord-text-gray hover:text-white">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <div
+      v-if="showAttachmentModal"
+      class="attachment-modal fixed inset-0 flex items-center justify-center z-[100]"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="attachment-title"
+      @click.self="closeAttachmentModal"
+    >
+      <div class="modal-overlay fixed inset-0 bg-black/80 backdrop-blur-md" @click="closeAttachmentModal"></div>
+      <div class="modal-content z-50 max-w-5xl w-full mx-4 max-h-[90vh] glass-card rounded-2xl border border-white/10 shadow-2xl flex flex-col overflow-hidden animate-slide-up">
+        <div class="modal-header border-b border-white/10 p-4 flex justify-between items-center bg-white/5">
+          <h3 id="attachment-title" class="text-white font-bold tracking-wide">{{ currentAttachment.name }}</h3>
+          <button type="button" aria-label="Закрыть просмотр" @click="closeAttachmentModal" class="text-gray-400 hover:text-white bg-white/5 hover:bg-white/10 p-2 rounded-xl transition-all">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
-        <div class="modal-body bg-discord-dark-secondary p-4 flex items-center justify-center overflow-auto rounded-b-md">
+        <div class="modal-body p-6 flex items-center justify-center overflow-auto custom-scrollbar flex-grow bg-black/20">
           <img 
-            v-if="isImage(currentAttachment.url)" 
+            v-if="isImage(currentAttachment)"
             :src="currentAttachment.url" 
             :alt="currentAttachment.name"
-            class="max-w-full max-h-[calc(90vh-8rem)]"
+            decoding="async"
+            class="max-w-full max-h-[calc(90vh-10rem)] object-contain rounded-lg shadow-xl"
           >
-          <div v-else class="file-preview bg-discord-dark p-8 rounded-md text-center">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto text-discord-text-gray mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-            <p class="text-white mb-2">{{ currentAttachment.name }}</p>
-            <p class="text-discord-text-gray mb-4">{{ formatFileSize(currentAttachment.size) }}</p>
+          <div v-else class="file-preview p-12 text-center w-full max-w-lg mx-auto">
+            <div class="w-32 h-32 mx-auto bg-indigo-500/20 rounded-3xl flex items-center justify-center mb-6 border border-indigo-500/30 shadow-glow">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+            </div>
+            <p class="text-2xl text-white font-bold mb-2">{{ currentAttachment.name }}</p>
+            <p class="text-indigo-300 font-medium mb-8 text-lg">{{ formatFileSize(currentAttachment.size) }}</p>
             <a 
               :href="currentAttachment.url" 
               download 
-              class="download-button bg-discord-accent hover:bg-discord-accent-hover text-white px-4 py-2 rounded-md inline-flex items-center"
+              class="download-button glass-button px-8 py-3 rounded-xl inline-flex items-center text-white font-bold group"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3 group-hover:-translate-y-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
               </svg>
               Скачать файл
@@ -94,20 +156,25 @@
 import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue';
 import { useChannelStore } from '../../stores/channels';
 import { useUserStore } from '../../stores/user';
+import { useNotificationStore } from '../../stores/notification';
 import MessageList from './MessageList.vue';
 import ChatInput from './ChatInput.vue';
 
 // Stores
 const channelStore = useChannelStore();
 const userStore = useUserStore();
+const notificationStore = useNotificationStore();
 
 // Refs для данных
 const messages = ref([]);
 const loading = ref(true);
 const hasMoreMessages = ref(true);
-const loadingMore = ref(false);
-const page = ref(1);
-const messagesPerPage = 25;
+const messagesWrapper = ref(null);
+const searchOpen = ref(false);
+const searchQuery = ref('');
+const notificationsEnabled = ref(localStorage.getItem('bulsteptech.chatNotifications') !== 'false');
+const showChannelInfo = ref(false);
+const createdObjectUrls = new Set();
 
 // Refs для модального окна с вложением
 const showAttachmentModal = ref(false);
@@ -115,6 +182,17 @@ const currentAttachment = ref({});
 
 // Computed properties
 const currentChannel = computed(() => channelStore.currentChannel || { id: '', name: '', description: '' });
+const isReadOnly = computed(() => Boolean(currentChannel.value.isReadOnly && userStore.role !== 'teacher'));
+const visibleMessages = computed(() => {
+  const query = searchQuery.value.toLocaleLowerCase('ru-RU');
+  if (!query) return messages.value;
+  return messages.value.filter(message => `${message.username || ''} ${message.content || ''}`.toLocaleLowerCase('ru-RU').includes(query));
+});
+
+function revokeCreatedObjectUrls() {
+  createdObjectUrls.forEach(url => URL.revokeObjectURL(url));
+  createdObjectUrls.clear();
+}
 
 const getInputPlaceholder = computed(() => {
   return `Сообщение в канал #${currentChannel.value.name}`;
@@ -122,6 +200,7 @@ const getInputPlaceholder = computed(() => {
 
 // Lifecycle hooks
 onMounted(async () => {
+  document.addEventListener('keydown', handleModalKeydown);
   await loadMessages();
   
   // Прокрутка вниз после загрузки сообщений
@@ -131,70 +210,36 @@ onMounted(async () => {
 });
 
 // Следим за изменением канала
-watch(() => channelStore.currentChannel, async () => {
+watch(() => currentChannel.value.id, async () => {
   // Сбрасываем состояние и загружаем новые сообщения при смене канала
+  revokeCreatedObjectUrls();
   messages.value = [];
   loading.value = true;
   hasMoreMessages.value = true;
-  page.value = 1;
   
   await loadMessages();
   
   nextTick(() => {
     scrollToBottom();
   });
-}, { deep: true });
+});
 
 // Загрузка сообщений
 async function loadMessages() {
-  try {
-    loading.value = true;
-    
-    // Имитация загрузки данных с сервера
-    await new Promise(resolve => setTimeout(resolve, 800));
-    
-    // Генерируем тестовые сообщения
-    const newMessages = generateTestMessages();
-    messages.value = [...newMessages];
-    
-    // Проверяем, есть ли еще сообщения для загрузки
-    hasMoreMessages.value = page.value < 3;
-    
-  } catch (error) {
-    console.error('Ошибка при загрузке сообщений:', error);
-  } finally {
-    loading.value = false;
-  }
+  loading.value = true;
+  messages.value = [...channelStore.channelMessages];
+  hasMoreMessages.value = false;
+  loading.value = false;
 }
 
 // Загрузка дополнительных сообщений
 async function loadMoreMessages() {
-  try {
-    if (loadingMore.value || !hasMoreMessages.value) return;
-    
-    loadingMore.value = true;
-    
-    // Имитация загрузки данных с сервера
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    page.value++;
-    
-    // Генерируем дополнительные тестовые сообщения
-    const olderMessages = generateTestMessages(true);
-    messages.value = [...olderMessages, ...messages.value];
-    
-    // Проверяем, есть ли еще сообщения для загрузки
-    hasMoreMessages.value = page.value < 3;
-    
-  } catch (error) {
-    console.error('Ошибка при загрузке дополнительных сообщений:', error);
-  } finally {
-    loadingMore.value = false;
-  }
+  hasMoreMessages.value = false;
 }
 
 // Обработка отправки сообщения
 function handleSendMessage(messageData) {
+  if (isReadOnly.value) return;
   // Создаем новое сообщение
   const newMessage = {
     id: `msg-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
@@ -203,18 +248,23 @@ function handleSendMessage(messageData) {
     role: userStore.role,
     timestamp: new Date().toISOString(),
     avatar: userStore.avatar,
-    attachments: messageData.attachments.map(file => ({
-      id: `attach-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-      name: file.name,
-      url: URL.createObjectURL(file),
-      size: file.size,
-      type: file.type
-    })),
+    attachments: messageData.attachments.map(file => {
+      const url = URL.createObjectURL(file);
+      createdObjectUrls.add(url);
+      return {
+        id: `attach-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+        name: file.name,
+        url,
+        size: file.size,
+        type: file.type,
+        isObjectUrl: true
+      };
+    }),
     reactions: []
   };
   
   // Добавляем сообщение в список
-  messages.value.push(newMessage);
+  messages.value = [...messages.value, newMessage].slice(-300);
   
   // Прокручиваем чат вниз
   nextTick(() => {
@@ -271,19 +321,29 @@ function handleOpenAttachment(attachment) {
 // Закрытие модального окна с вложением
 function closeAttachmentModal() {
   showAttachmentModal.value = false;
+  currentAttachment.value = {};
+}
+
+function handleModalKeydown(event) {
+  if (event.key === 'Escape' && showAttachmentModal.value) closeAttachmentModal();
 }
 
 // Прокрутка чата вниз
 function scrollToBottom() {
-  const messagesWrapper = document.querySelector('.messages-wrapper');
-  if (messagesWrapper) {
-    messagesWrapper.scrollTop = messagesWrapper.scrollHeight;
+  if (messagesWrapper.value) {
+    messagesWrapper.value.scrollTop = messagesWrapper.value.scrollHeight;
   }
 }
 
 // Проверка типа файла
-function isImage(url) {
-  return /\.(jpg|jpeg|png|gif|webp)$/i.test(url);
+function isImage(attachment) {
+  return attachment?.type?.startsWith('image/') || /\.(jpg|jpeg|png|gif|webp)(?:\?.*)?$/i.test(attachment?.url || '');
+}
+
+function toggleNotifications() {
+  notificationsEnabled.value = !notificationsEnabled.value;
+  localStorage.setItem('bulsteptech.chatNotifications', String(notificationsEnabled.value));
+  notificationStore.info(notificationsEnabled.value ? 'Уведомления канала включены' : 'Уведомления канала отключены');
 }
 
 // Форматирование размера файла
@@ -302,128 +362,16 @@ function formatFileSize(bytes) {
   return `${size.toFixed(1)} ${units[i]}`;
 }
 
-// Генерация тестовых сообщений
-function generateTestMessages(older = false) {
-  const users = [
-    { id: 'user1', username: 'Иванов Иван', role: 'teacher', avatar: 'https://i.pravatar.cc/150?img=1' },
-    { id: 'user2', username: 'Петров Пётр', role: 'student', avatar: 'https://i.pravatar.cc/150?img=2' },
-    { id: 'user3', username: 'Сидорова Анна', role: 'student', avatar: 'https://i.pravatar.cc/150?img=3' },
-    { id: 'user4', username: 'Смирнов Алексей', role: 'student', avatar: 'https://i.pravatar.cc/150?img=4' },
-    { id: 'user5', username: 'Козлова Елена', role: 'student', avatar: 'https://i.pravatar.cc/150?img=5' },
-  ];
-  
-  const messagesContent = [
-    'Добрый день! Сегодня мы обсудим новую тему по программированию.',
-    'Всем привет! У меня есть вопрос по вчерашнему заданию.',
-    'Кто-нибудь может объяснить, как работает этот алгоритм?',
-    'Не могу решить задачу 3 из домашнего задания.',
-    'На следующей неделе будет контрольная работа, не забудьте подготовиться!',
-    'Можно ли перенести дедлайн на следующую неделю?',
-    'Отличная работа на занятии сегодня!',
-    'Я загрузил дополнительные материалы в раздел ресурсов.',
-    'Спасибо за объяснение, теперь всё понятно!',
-    'Кто хочет вместе решить задачи из практикума?',
-    'Напоминаю, что завтра у нас консультация перед экзаменом.',
-    'Я нашёл интересную статью по теме нашего курса.',
-    'Можно ли использовать другой метод для решения этой задачи?',
-    'Возникла проблема при установке среды разработки, кто-нибудь может помочь?',
-    'Предлагаю создать общий проект для отработки навыков.',
-  ];
-  
-  const systemMessages = [
-    'Пользователь Иванов Иван присоединился к каналу',
-    'Пользователь Петров Пётр присоединился к каналу',
-    'Пользователь Сидорова Анна присоединился к каналу',
-  ];
-  
-  // Генерируем базовую дату для сообщений
-  let baseDate = new Date();
-  
-  // Если нужны более старые сообщения, отодвигаем дату назад
-  if (older) {
-    baseDate = new Date(baseDate.getTime() - 24 * 60 * 60 * 1000 * page.value);
-  }
-  
-  // Генерируем случайное количество сообщений (от 15 до 25)
-  const count = older ? messagesPerPage : Math.floor(Math.random() * 10) + 15;
-  const generatedMessages = [];
-  
-  // Добавляем системное сообщение, если это первая страница
-  if (!older && page.value === 1) {
-    generatedMessages.push({
-      id: `msg-system-1`,
-      type: 'system',
-      content: systemMessages[Math.floor(Math.random() * systemMessages.length)],
-      timestamp: new Date(baseDate.getTime() - (60 * 60 * 1000)).toISOString(),
-    });
-  }
-  
-  // Генерируем обычные сообщения
-  for (let i = 0; i < count; i++) {
-    const user = users[Math.floor(Math.random() * users.length)];
-    const messageTime = new Date(baseDate.getTime() - (i * 3 * 60 * 1000));
-    
-    // Случайно выбираем, будет ли у сообщения вложение
-    const hasAttachment = Math.random() < 0.2;
-    const attachments = hasAttachment 
-      ? [{
-          id: `attach-${i}`,
-          name: `Файл-${i}.${Math.random() < 0.7 ? 'jpg' : 'pdf'}`,
-          url: `https://picsum.photos/500/300?random=${i}`,
-          size: Math.floor(Math.random() * 5 * 1024 * 1024),
-          type: Math.random() < 0.7 ? 'image/jpeg' : 'application/pdf'
-        }]
-      : [];
-    
-    // Случайно выбираем, будут ли у сообщения реакции
-    const hasReactions = Math.random() < 0.3;
-    const reactionsCount = hasReactions ? Math.floor(Math.random() * 3) + 1 : 0;
-    const reactions = [];
-    
-    if (hasReactions) {
-      const emojis = ['👍', '❤️', '😂', '🎉', '🔥', '👀', '🙏', '👏'];
-      
-      for (let j = 0; j < reactionsCount; j++) {
-        const emoji = emojis[Math.floor(Math.random() * emojis.length)];
-        const count = Math.floor(Math.random() * 3) + 1;
-        
-        // Создаем список пользователей, которые поставили реакцию
-        const reactedUsers = [];
-        for (let k = 0; k < count; k++) {
-          const randomUser = users[Math.floor(Math.random() * users.length)];
-          if (!reactedUsers.includes(randomUser.id)) {
-            reactedUsers.push(randomUser.id);
-          }
-        }
-        
-        reactions.push({
-          emoji,
-          count: reactedUsers.length,
-          users: reactedUsers
-        });
-      }
-    }
-    
-    generatedMessages.push({
-      id: `msg-${i}`,
-      content: messagesContent[Math.floor(Math.random() * messagesContent.length)],
-      username: user.username,
-      role: user.role,
-      avatar: user.avatar,
-      timestamp: messageTime.toISOString(),
-      attachments,
-      reactions
-    });
-  }
-  
-  return generatedMessages;
-}
+onUnmounted(() => {
+  document.removeEventListener('keydown', handleModalKeydown);
+  revokeCreatedObjectUrls();
+});
 </script>
 
 <style scoped>
 .messages-wrapper {
   scrollbar-width: thin;
-  scrollbar-color: #202225 #2f3136;
+  scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
 }
 
 .messages-wrapper::-webkit-scrollbar {
@@ -431,16 +379,49 @@ function generateTestMessages(older = false) {
 }
 
 .messages-wrapper::-webkit-scrollbar-track {
-  background: #2f3136;
-  border-radius: 4px;
+  background: transparent;
 }
 
 .messages-wrapper::-webkit-scrollbar-thumb {
-  background-color: #202225;
+  background-color: rgba(255, 255, 255, 0.1);
   border-radius: 4px;
 }
 
-.attachment-modal {
-  backdrop-filter: blur(3px);
+.messages-wrapper::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.2);
 }
-</style> 
+
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.3);
+}
+
+.chat-toolbar-enter-active,
+.chat-toolbar-leave-active {
+  transition: opacity 150ms ease, transform 150ms ease;
+}
+
+.chat-toolbar-enter-from,
+.chat-toolbar-leave-to {
+  opacity: 0;
+  transform: translateY(-5px);
+}
+</style>

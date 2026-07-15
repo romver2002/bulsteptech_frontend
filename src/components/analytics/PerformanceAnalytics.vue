@@ -123,8 +123,11 @@
             >
               <td class="px-4 py-3">
                 <div class="flex items-center">
-                  <div class="flex-shrink-0 h-10 w-10">
-                    <img class="h-10 w-10 rounded-full" :src="student.avatar" alt="Avatar">
+                  <div
+                    class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 text-xs font-black text-white shadow-lg shadow-indigo-950/30"
+                    :aria-label="student.name"
+                  >
+                    {{ getInitials(student.name) }}
                   </div>
                   <div class="ml-3">
                     <div class="font-medium">{{ student.name }}</div>
@@ -181,7 +184,11 @@
                 </div>
               </td>
               <td class="px-4 py-3 text-right">
-                <button class="text-discord-accent hover:underline text-sm">
+                <button
+                  type="button"
+                  class="text-discord-accent hover:underline text-sm"
+                  @click="selectedStudent = student"
+                >
                   Подробнее
                 </button>
               </td>
@@ -189,13 +196,62 @@
           </tbody>
         </table>
       </div>
+
+      <transition name="student-details">
+        <div
+          v-if="selectedStudent"
+          class="mt-4 rounded-xl border border-indigo-400/20 bg-indigo-500/10 p-4"
+          role="region"
+          aria-live="polite"
+        >
+          <div class="flex items-start justify-between gap-4">
+            <div>
+              <p class="text-xs font-semibold uppercase tracking-wider text-indigo-300">Карточка студента</p>
+              <h5 class="mt-1 font-semibold text-white">{{ selectedStudent.name }}</h5>
+              <p class="text-sm text-discord-text-gray">{{ selectedStudent.email }}</p>
+            </div>
+            <button type="button" class="rounded-lg px-2 py-1 text-discord-text-gray hover:bg-white/10 hover:text-white" @click="selectedStudent = null" aria-label="Закрыть карточку">×</button>
+          </div>
+          <div class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <div class="rounded-lg bg-black/20 p-3"><span class="block text-xs text-discord-text-gray">Посещаемость</span><strong>{{ selectedStudent.attendance }}%</strong></div>
+            <div class="rounded-lg bg-black/20 p-3"><span class="block text-xs text-discord-text-gray">Средний балл</span><strong>{{ selectedStudent.averageScore }}</strong></div>
+            <div class="rounded-lg bg-black/20 p-3"><span class="block text-xs text-discord-text-gray">Задания</span><strong>{{ selectedStudent.completedAssignments.completed }}/{{ selectedStudent.completedAssignments.total }}</strong></div>
+            <div class="rounded-lg bg-black/20 p-3"><span class="block text-xs text-discord-text-gray">Активность</span><strong>{{ selectedStudent.activity }}%</strong></div>
+          </div>
+        </div>
+      </transition>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue';
-import Chart from 'chart.js/auto';
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
+import {
+  ArcElement,
+  CategoryScale,
+  Chart,
+  DoughnutController,
+  Filler,
+  Legend,
+  LinearScale,
+  LineController,
+  LineElement,
+  PointElement,
+  Tooltip
+} from 'chart.js';
+
+Chart.register(
+  ArcElement,
+  CategoryScale,
+  DoughnutController,
+  Filler,
+  Legend,
+  LinearScale,
+  LineController,
+  LineElement,
+  PointElement,
+  Tooltip
+);
 
 const props = defineProps({
   courseId: {
@@ -210,10 +266,13 @@ const selectedPeriod = ref('month');
 const selectedType = ref('all');
 const searchQuery = ref('');
 const sortBy = ref('name');
+const selectedStudent = ref(null);
 
 // Ссылки на элементы canvas для графиков
 const studentsDistributionChart = ref(null);
 const trendChart = ref(null);
+let distributionChartInstance = null;
+let trendChartInstance = null;
 
 // Доступные опции для фильтров
 const courses = [
@@ -249,7 +308,6 @@ const students = ref([
     id: 1,
     name: 'Иванов Иван',
     email: 'ivanov@example.com',
-    avatar: 'https://i.pravatar.cc/150?img=1',
     attendance: 95,
     averageScore: 87,
     completedAssignments: {
@@ -263,7 +321,6 @@ const students = ref([
     id: 2,
     name: 'Петрова Мария',
     email: 'petrova@example.com',
-    avatar: 'https://i.pravatar.cc/150?img=5',
     attendance: 98,
     averageScore: 92,
     completedAssignments: {
@@ -277,7 +334,6 @@ const students = ref([
     id: 3,
     name: 'Сидоров Алексей',
     email: 'sidorov@example.com',
-    avatar: 'https://i.pravatar.cc/150?img=3',
     attendance: 78,
     averageScore: 65,
     completedAssignments: {
@@ -291,7 +347,6 @@ const students = ref([
     id: 4,
     name: 'Кузнецова Анна',
     email: 'kuznetsova@example.com',
-    avatar: 'https://i.pravatar.cc/150?img=9',
     attendance: 86,
     averageScore: 78,
     completedAssignments: {
@@ -305,7 +360,6 @@ const students = ref([
     id: 5,
     name: 'Морозов Игорь',
     email: 'morozov@example.com',
-    avatar: 'https://i.pravatar.cc/150?img=6',
     attendance: 92,
     averageScore: 83,
     completedAssignments: {
@@ -354,12 +408,23 @@ const getProgressColor = (value) => {
   return 'bg-discord-error';
 };
 
+const getInitials = (name) => String(name || '?')
+  .trim()
+  .split(/\s+/)
+  .slice(0, 2)
+  .map(part => part.charAt(0))
+  .join('')
+  .toUpperCase();
+
 const initCharts = () => {
+  distributionChartInstance?.destroy();
+  trendChartInstance?.destroy();
+
   // График распределения студентов
   if (studentsDistributionChart.value) {
     const ctx = studentsDistributionChart.value;
     
-    new Chart(ctx, {
+    distributionChartInstance = new Chart(ctx, {
       type: 'doughnut',
       data: {
         labels: ['Отлично (85-100)', 'Хорошо (70-84)', 'Удовлетворительно (50-69)', 'Требует внимания (<50)'],
@@ -398,7 +463,7 @@ const initCharts = () => {
   if (trendChart.value) {
     const ctx = trendChart.value;
     
-    new Chart(ctx, {
+    trendChartInstance = new Chart(ctx, {
       type: 'line',
       data: {
         labels: ['Неделя 1', 'Неделя 2', 'Неделя 3', 'Неделя 4'],
@@ -449,18 +514,23 @@ const initCharts = () => {
 
 // Обновление графиков при изменении фильтров
 watch([selectedCourse, selectedPeriod, selectedType], () => {
-  // В реальном приложении здесь был бы запрос к API
-  // и обновление данных на графиках
-  console.log('Filters changed:', {
-    course: selectedCourse.value,
-    period: selectedPeriod.value,
-    type: selectedType.value
-  });
+  if (trendChartInstance) {
+    const base = selectedPeriod.value === 'week' ? [78, 80, 82, 84] : selectedPeriod.value === 'year' ? [69, 74, 79, 84] : [75, 78, 80, 84];
+    trendChartInstance.data.datasets[0].data = base;
+    trendChartInstance.update('none');
+  }
 });
 
 // Инициализация графиков после загрузки компонента
 onMounted(() => {
   initCharts();
+});
+
+onUnmounted(() => {
+  distributionChartInstance?.destroy();
+  trendChartInstance?.destroy();
+  distributionChartInstance = null;
+  trendChartInstance = null;
 });
 </script>
 
@@ -477,5 +547,16 @@ table {
 
 td, th {
   white-space: nowrap;
+}
+
+.student-details-enter-active,
+.student-details-leave-active {
+  transition: opacity 160ms ease, transform 160ms ease;
+}
+
+.student-details-enter-from,
+.student-details-leave-to {
+  opacity: 0;
+  transform: translateY(-6px);
 }
 </style>

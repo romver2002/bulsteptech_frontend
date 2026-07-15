@@ -2,13 +2,15 @@
   <div class="relative" ref="dropdown">
     <button 
       @click="toggleDropdown"
-      class="flex items-center justify-center bg-discord-dark-hover p-1.5 rounded hover:bg-discord-secondary"
+      class="language-trigger"
+      :aria-expanded="isOpen"
+      aria-label="Выбрать язык"
     >
-      <span class="text-lg md:mr-1">{{ currentLocaleFlag }}</span>
-      <span class="text-xs text-discord-text-light hidden md:inline">{{ currentLocaleName }}</span>
+      <span class="text-base xl:mr-1.5">{{ currentLocaleFlag }}</span>
+      <span class="hidden text-xs font-semibold text-slate-300 xl:inline">{{ currentLocaleName }}</span>
       <svg 
         xmlns="http://www.w3.org/2000/svg" 
-        class="h-4 w-4 text-discord-text-gray ml-1 hidden md:block"
+        class="ml-1 hidden h-4 w-4 text-slate-500 transition-transform xl:block"
         :class="{ 'transform rotate-180': isOpen }"
         fill="none" 
         viewBox="0 0 24 24" 
@@ -18,23 +20,24 @@
       </svg>
     </button>
     
-    <div 
-      v-if="isOpen"
-      class="absolute right-0 top-full mt-1 w-40 bg-discord-dark border border-gray-700 rounded-md shadow-lg overflow-hidden z-50"
-    >
-      <div class="py-1">
+    <transition name="language-menu">
+      <div
+        v-if="isOpen"
+        class="absolute right-0 top-full z-50 mt-3 w-44 overflow-hidden rounded-2xl border border-white/10 bg-[#111827]/98 p-2 shadow-2xl shadow-black/50"
+      >
         <button
           v-for="locale in availableLocales"
           :key="locale.code"
           @click="changeLocale(locale.code)"
-          class="flex items-center w-full text-left px-4 py-2 text-sm hover:bg-discord-secondary"
-          :class="locale.code === currentLocale ? 'bg-discord-accent/10' : ''"
+          class="flex w-full items-center rounded-xl px-3 py-2.5 text-left text-sm font-medium text-slate-300 transition hover:bg-white/[0.06] hover:text-white"
+          :class="locale.code === currentLocale ? 'bg-cyan-400/10 text-cyan-200' : ''"
         >
           <span class="text-lg mr-2">{{ locale.flag }}</span>
-          <span class="text-discord-text-light">{{ locale.name }}</span>
+          <span>{{ locale.name }}</span>
+          <span v-if="locale.code === currentLocale" class="ml-auto h-1.5 w-1.5 rounded-full bg-cyan-300 shadow-[0_0_8px_rgba(103,232,249,.8)]" />
         </button>
       </div>
-    </div>
+    </transition>
   </div>
 </template>
 
@@ -85,11 +88,28 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-button {
-  transition: background-color 0.2s ease;
+.language-trigger {
+  display: flex;
+  height: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, .075);
+  border-radius: .9rem;
+  background: rgba(255, 255, 255, .035);
+  padding: 0 .7rem;
+  transition: color 160ms ease, border-color 160ms ease, background-color 160ms ease, transform 160ms ease;
 }
 
-svg {
-  transition: transform 0.2s ease;
+.language-trigger:hover {
+  border-color: rgba(34, 211, 238, .18);
+  background: rgba(255, 255, 255, .065);
 }
-</style> 
+
+.language-trigger:active { transform: scale(.98); }
+.language-trigger:focus-visible { outline: 2px solid rgba(34, 211, 238, .7); outline-offset: 2px; }
+
+.language-menu-enter-active,
+.language-menu-leave-active { transition: opacity 150ms ease, transform 150ms ease; transform-origin: top right; }
+.language-menu-enter-from,
+.language-menu-leave-to { opacity: 0; transform: translateY(-6px) scale(.98); }
+</style>

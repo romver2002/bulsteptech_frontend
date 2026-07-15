@@ -1,7 +1,9 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 
-export const useChannelStore = defineStore('channel', () => {
+// Legacy store kept for compatibility with old, unmounted prototypes.
+// Its id must not collide with the production channel store in channels.js.
+export const useChannelStore = defineStore('legacy-channel', () => {
   // Состояние канала
   const currentChannelId = ref('');
   const channels = ref([
@@ -174,4 +176,4 @@ export const useChannelStore = defineStore('channel', () => {
     removeChannel,
     updateChannel
   };
-}); 
+});

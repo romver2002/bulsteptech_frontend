@@ -1,51 +1,57 @@
 <template>
-  <div class="chat-input-container bg-discord-dark border-t border-discord-dark-hover">
-    <div v-if="uploading" class="upload-progress flex items-center p-2 bg-discord-dark-hover">
-      <div class="loading-spinner w-4 h-4 mr-2"></div>
-      <span class="text-sm text-discord-text-light">Загрузка файла: {{ uploadProgress }}%</span>
-      <button @click="cancelUpload" class="ml-auto text-discord-error text-sm">Отмена</button>
+  <div class="chat-input-container mt-2">
+    <div v-if="uploading" class="upload-progress flex items-center p-3 mb-2 glass-card rounded-xl border border-white/10 animate-fade-in" role="status" aria-live="polite">
+      <div class="loading-spinner w-4 h-4 mr-3 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+      <span class="text-sm font-medium text-indigo-300">Загрузка файла: {{ uploadProgress }}%</span>
+      <button type="button" @click="cancelUpload" class="ml-auto text-rose-400 hover:text-rose-300 text-sm font-medium transition-colors">Отмена</button>
     </div>
 
-    <div v-if="attachments.length > 0" class="attachments-preview p-2 flex flex-wrap gap-2">
+    <div v-if="attachments.length > 0" class="attachments-preview mb-3 flex flex-wrap gap-3">
       <div 
         v-for="(file, index) in attachments" 
         :key="index" 
-        class="attachment-item relative bg-discord-dark-hover rounded-md p-2 flex items-center"
+        class="attachment-item relative bg-black/40 border border-white/10 rounded-xl p-3 flex items-center animate-fade-in group"
       >
-        <div class="file-icon mr-2">
-          <svg v-if="isImage(file)" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-discord-text-gray" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+        <div class="file-icon p-2 bg-white/5 rounded-lg mr-3">
+          <svg v-if="isImage(file)" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
           </svg>
-          <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-discord-text-gray" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
           </svg>
         </div>
-        <div class="file-info truncate max-w-xs">
-          <div class="file-name text-sm font-medium text-white truncate">{{ file.name }}</div>
-          <div class="file-size text-xs text-discord-text-gray">{{ formatFileSize(file.size) }}</div>
+        <div class="file-info truncate max-w-[150px]">
+          <div class="file-name text-xs font-bold text-white truncate">{{ file.name }}</div>
+          <div class="file-size text-[10px] text-gray-500 font-medium uppercase mt-0.5">{{ formatFileSize(file.size) }}</div>
         </div>
-        <button 
+        <button
+          type="button"
           @click="removeAttachment(index)" 
-          class="remove-attachment absolute -top-1 -right-1 bg-discord-dark rounded-full p-0.5 text-discord-text-gray hover:text-discord-error"
+          class="remove-attachment absolute -top-2 -right-2 bg-rose-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 focus:opacity-100 shadow-lg transform scale-75 group-hover:scale-100 focus:scale-100 transition-all hover:bg-rose-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+          :aria-label="`Удалить вложение ${file.name}`"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
       </div>
     </div>
 
-    <div class="input-row flex items-center p-2">
-      <button 
-        @click="openFileInput" 
-        class="action-button p-2 rounded-full text-discord-text-gray hover:text-discord-text-light hover:bg-discord-dark-hover"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-        </svg>
-      </button>
+    <div class="input-row flex items-center relative">
+      <div class="absolute left-3 z-10 flex items-center">
+        <button
+          type="button"
+          @click="openFileInput"
+          class="action-button p-2 rounded-xl bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-colors border border-transparent hover:border-white/10"
+          aria-label="Прикрепить файл"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+          </svg>
+        </button>
+      </div>
       
-      <div class="relative flex-grow mx-2">
+      <div class="relative flex-grow">
         <input 
           ref="fileInput"
           type="file" 
@@ -57,77 +63,89 @@
         <textarea
           ref="messageInput"
           v-model="message"
-          class="message-input w-full py-2 px-3 bg-discord-dark-secondary text-discord-text-light rounded-md resize-none focus:outline-none"
+          class="message-input w-full py-4 pl-14 pr-32 glass-input rounded-2xl text-white placeholder-gray-500 shadow-inner resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all"
           :placeholder="placeholder"
+          aria-label="Текст сообщения"
           :rows="1"
-          @keydown.enter.prevent="handleEnterKey"
+          @keydown.enter="handleEnterKey"
           @input="adjustTextareaHeight"
           @paste="handlePaste"
         ></textarea>
 
-        <div 
-          v-if="message.length === 0 && !isMobile" 
-          class="absolute right-3 top-1/2 transform -translate-y-1/2 text-xs text-discord-text-gray"
-        >
-          Нажмите Enter для отправки
-        </div>
-      </div>
-
-      <div class="action-buttons flex">
-        <button 
-          @click="toggleEmojiPicker" 
-          class="action-button p-2 rounded-full text-discord-text-gray hover:text-discord-text-light hover:bg-discord-dark-hover relative"
-        >
+        <div class="absolute right-2 top-1/2 transform -translate-y-1/2 flex items-center gap-2">
+          <button
+            ref="emojiToggleButton"
+            type="button"
+            @click="toggleEmojiPicker"
+            class="action-button p-2 rounded-xl bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-colors border border-transparent hover:border-white/10 relative z-10"
+            aria-label="Открыть панель эмодзи"
+            :aria-controls="emojiPickerId"
+            :aria-expanded="showEmojiPicker"
+          >
           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
         </button>
         
-        <button 
-          @click="sendMessage" 
-          :disabled="!canSendMessage"
-          class="send-button ml-1 p-2 rounded-full" 
-          :class="canSendMessage ? 'text-discord-accent hover:bg-discord-dark-hover' : 'text-discord-text-gray opacity-50 cursor-not-allowed'"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-          </svg>
-        </button>
+          <button
+            type="button"
+            @click="sendMessage"
+            :disabled="!canSendMessage"
+            class="send-button p-2 rounded-xl flex items-center justify-center transition-all z-10"
+            :class="canSendMessage ? 'glass-button group text-white' : 'bg-white/5 text-gray-500 opacity-50 cursor-not-allowed'"
+            aria-label="Отправить сообщение"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 transform transition-transform" :class="canSendMessage ? 'group-hover:translate-x-1 group-hover:-translate-y-1' : ''" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
+            </svg>
+          </button>
+        </div>
       </div>
     </div>
 
     <!-- Панель эмодзи -->
     <div 
       v-if="showEmojiPicker" 
-      class="emoji-picker absolute bottom-full right-0 mb-2 bg-discord-dark border border-discord-dark-hover rounded-md shadow-lg p-2 z-10"
+      :id="emojiPickerId"
+      ref="emojiPicker"
+      class="emoji-picker absolute bottom-full right-4 mb-2 glass-card border border-white/10 rounded-2xl shadow-2xl p-3 z-50 animate-fade-in origin-bottom-right"
+      role="dialog"
+      aria-label="Выбор эмодзи"
+      tabindex="-1"
+      @keydown.esc.stop="closeEmojiPicker(true)"
     >
-      <div class="picker-header flex justify-between items-center mb-2 border-b border-discord-dark-hover pb-2">
-        <h3 class="text-sm font-medium text-white">Эмодзи</h3>
-        <button @click="toggleEmojiPicker" class="text-discord-text-gray hover:text-discord-text-light">
+      <div class="picker-header flex justify-between items-center mb-3 pb-2 border-b border-white/10">
+        <h3 class="text-sm font-bold text-white">Эмодзи</h3>
+        <button type="button" @click="closeEmojiPicker(true)" class="text-gray-400 hover:text-white transition-colors bg-white/5 hover:bg-white/10 p-1 rounded-lg" aria-label="Закрыть панель эмодзи">
           <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
       </div>
 
-      <div class="emoji-categories flex border-b border-discord-dark-hover pb-1 mb-2">
+      <div class="emoji-categories flex border-b border-white/5 pb-2 mb-3 overflow-x-auto custom-scrollbar">
         <button 
           v-for="(category, index) in emojiCategories" 
           :key="index"
+          type="button"
           @click="setEmojiCategory(category.id)"
-          class="p-1 rounded-md mx-0.5" 
-          :class="currentEmojiCategory === category.id ? 'bg-discord-dark-secondary' : 'hover:bg-discord-dark-hover'"
+          class="p-1.5 rounded-lg mx-0.5 transition-all flex-shrink-0"
+          :class="currentEmojiCategory === category.id ? 'bg-indigo-500/20 shadow-sm border border-indigo-500/30' : 'hover:bg-white/10 border border-transparent'"
+          :aria-label="`Категория ${category.label}`"
+          :aria-pressed="currentEmojiCategory === category.id"
         >
-          <span class="text-lg" v-html="category.icon"></span>
+          <span class="text-lg leading-none block" aria-hidden="true">{{ category.icon }}</span>
         </button>
       </div>
 
-      <div class="emoji-grid grid grid-cols-8 gap-1 max-h-48 overflow-y-auto p-1">
+      <div class="emoji-grid grid grid-cols-8 gap-1.5 max-h-48 overflow-y-auto p-1 custom-scrollbar">
         <button 
           v-for="emoji in filteredEmojis" 
           :key="emoji"
+          type="button"
           @click="insertEmoji(emoji)"
-          class="emoji-button flex justify-center items-center text-xl p-1 hover:bg-discord-dark-hover rounded-md"
+          class="emoji-button flex justify-center items-center text-2xl p-1.5 hover:bg-white/10 rounded-xl transition-transform hover:scale-110"
+          :aria-label="`Вставить эмодзи ${emoji}`"
         >
           {{ emoji }}
         </button>
@@ -137,7 +155,7 @@
 </template>
 
 <script setup>
-import { ref, computed, nextTick, watch, onMounted, onUnmounted } from 'vue';
+import { ref, computed, nextTick, watch, onMounted, onUnmounted, useId } from 'vue';
 
 const props = defineProps({
   placeholder: {
@@ -167,9 +185,9 @@ const messageInput = ref(null);
 // Emoji picker
 const showEmojiPicker = ref(false);
 const currentEmojiCategory = ref('smileys');
-
-// Определение мобильного устройства
-const isMobile = computed(() => window.innerWidth <= 768);
+const emojiPicker = ref(null);
+const emojiToggleButton = ref(null);
+const emojiPickerId = `chat-emoji-picker-${useId()}`;
 
 // Возможность отправить сообщение
 const canSendMessage = computed(() => {
@@ -178,14 +196,14 @@ const canSendMessage = computed(() => {
 
 // Категории эмодзи
 const emojiCategories = [
-  { id: 'smileys', icon: '😊', emojis: ['😀', '😃', '😄', '😁', '😆', '😅', '🤣', '😂', '🙂', '🙃', '😉', '😊', '😇', '🥰', '😍', '🤩', '😘', '😗', '😚', '😙', '😋', '😛', '😜', '🤪', '😝', '🤑', '🤗', '🤭', '🤫', '🤔', '🤐', '🤨', '😐', '😑', '😶', '😏', '😒', '🙄', '😬'] },
-  { id: 'people', icon: '👋', emojis: ['👍', '👎', '👌', '✌️', '🤞', '🤟', '🤘', '🤙', '👈', '👉', '👆', '👇', '☝️', '👋', '🤚', '🖐️', '✋', '🖖', '👏', '🙌', '👐', '🤲', '🤝', '🙏', '✍️', '💪', '🦵', '🦶', '👂', '👃', '🧠', '🦷', '👀', '👁️', '👅', '👄'] },
-  { id: 'animals', icon: '🐱', emojis: ['🐶', '🐱', '🐭', '🐹', '🐰', '🦊', '🐻', '🐼', '🐨', '🐯', '🦁', '🐮', '🐷', '🐸', '🐵', '🙈', '🙉', '🙊', '🐔', '🐧', '🐦', '🐤', '🐣', '🐥', '🦆', '🦢', '🦉', '🦚', '🦜', '🐺', '🐗', '🐴', '🦄', '🐝', '🐛', '🦋', '🐌', '🐞', '🐜', '🦟', '🦗', '🕷️', '🕸️', '🦂', '🦀', '🦞', '🦐', '🦑', '🐙', '🦈', '🐬', '🐳', '🐋', '🐊', '🐆', '🐅', '🐃', '🐂', '🐄', '🦌', '🐪', '🐫', '🦙', '🦒', '🐘', '🦏', '🦛', '🐐', '🐏', '🐑', '🦍', '🦧', '🐒'] },
-  { id: 'food', icon: '🍔', emojis: ['🍏', '🍎', '🍐', '🍊', '🍋', '🍌', '🍉', '🍇', '🍓', '🍈', '🍒', '🍑', '🥭', '🍍', '🥥', '🥝', '🍅', '🍆', '🥑', '🥦', '🥬', '🥒', '🌶️', '🌽', '🥕', '🧄', '🧅', '🥔', '🍠', '🌰', '🥜', '🍯', '🥓', '🍔', '🍟', '🍕', '🌭', '🥪', '🌮', '🌯', '🥙', '🍝', '🥘', '🥫', '🍜', '🍲', '🍛', '🍣', '🍱', '🥟', '🦪', '🍤', '🍙', '🍚', '🍘', '🍥', '🥠', '🥮', '🍢', '🍡', '🍧', '🍨', '🍦', '🥧', '🧁', '🍰', '🎂', '🍮', '🍭', '🍬', '🍫', '🍿', '🍩', '🍪', '🌰', '☕', '🍵', '🧃', '🥤', '🍶', '🍺', '🍻', '🥂', '🍷', '🥃', '🍸', '🍹', '🧉', '🍾'] },
-  { id: 'activity', icon: '⚽', emojis: ['⚽', '🏀', '🏈', '⚾', '🥎', '🎾', '🏐', '🏉', '🥏', '🎱', '🪀', '🏓', '🏸', '🏒', '🏑', '🥍', '🏏', '🥅', '⛳', '🪁', '🏹', '🎣', '🤿', '🥊', '🥋', '🎽', '🛹', '🛷', '⛸️', '🥌', '🎿', '⛷️', '🏂', '🪂', '🏋️', '🤼', '🤸', '⛹️', '🤺', '🤾', '🏌️', '🏇', '🧘', '🏄', '🏊', '🤽', '🚣', '🧗', '🚵', '🚴'] },
-  { id: 'travel', icon: '🚗', emojis: ['🚗', '🚕', '🚙', '🚌', '🚎', '🏎️', '🚓', '🚑', '🚒', '🚐', '🛻', '🚚', '🚛', '🚜', '🛵', '🏍️', '🛺', '🚲', '🛴', '🛹', '🚅', '🚄', '🚂', '🚆', '🚇', '🚊', '🚉', '✈️', '🛫', '🛬', '🛩️', '💺', '🛰️', '🚀', '🛸', '🚁', '🛶', '⛵', '🚤', '🛥️', '🛳️', '⛴️', '🚢', '⚓', '🚧', '⛽', '🚏', '🚦', '🚥', '🗿', '🗽', '🗼', '🏰', '🏯', '🏟️', '🎡', '🎢', '🎠', '⛲', '⛱️', '🏖️', '🏝️', '🏜️', '🌋', '⛰️', '🏔️', '🗻', '🏕️', '⛺', '🏠', '🏡', '🏘️', '🏚️', '🏗️', '🏢', '🏬', '🏣', '🏤', '🏥', '🏦', '🏨', '🏪', '🏫', '🏩', '💒', '🏛️', '⛪', '🕌', '🕍', '🛕', '🕋', '⛩️'] },
-  { id: 'symbols', icon: '💯', emojis: ['❤️', '🧡', '💛', '💚', '💙', '💜', '🤎', '🖤', '🤍', '💔', '❣️', '💕', '💞', '💓', '💗', '💖', '💘', '💝', '💟', '☮️', '✝️', '☪️', '🕉️', '☸️', '✡️', '🔯', '🪯', '🕎', '☯️', '☦️', '🛐', '⛎', '♈', '♉', '♊', '♋', '♌', '♍', '♎', '♏', '♐', '♑', '♒', '♓', '🆔', '⚛️', '🉑', '☢️', '☣️', '📴', '📳', '🈶', '🈚', '🈸', '🈺', '🈷️', '✴️', '🆚', '💮', '🉐', '㊙️', '㊗️', '🈴', '🈵', '🈹', '🈲', '🅰️', '🅱️', '🆎', '🆑', '🅾️', '🆘', '❌', '⭕', '🛑', '⛔', '📛', '🚫', '💯', '💢', '♨️', '🚷', '🚯', '🚳', '🚱', '🔞', '📵', '🚭', '❗', '❕', '❓', '❔', '‼️', '⁉️', '🔅', '🔆', '〽️', '⚠️', '🚸', '🔱', '⚜️', '🔰', '♻️', '✅', '🈯', '💹', '❇️', '✳️', '❎'] },
-  { id: 'flags', icon: '🏳️', emojis: ['🏁', '🚩', '🏴', '🏳️', '🏳️‍🌈', '🏳️‍⚧️', '🏴‍☠️', '🇦🇫', '🇦🇽', '🇦🇱', '🇩🇿', '🇦🇸', '🇦🇩', '🇦🇴', '🇦🇮', '🇦🇶', '🇦🇬', '🇦🇷', '🇦🇲', '🇦🇼', '🇦🇺', '🇦🇹', '🇦🇿', '🇧🇸', '🇧🇭', '🇧🇩', '🇧🇧', '🇧🇾', '🇧🇪', '🇧🇿', '🇧🇯', '🇧🇲', '🇧🇹', '🇧🇴', '🇧🇦', '🇧🇼', '🇧🇷', '🇧🇳', '🇧🇬', '🇧🇫', '🇧🇮', '🇰🇭', '🇨🇲', '🇨🇦', '🇮🇨', '🇨🇻', '🇧🇶', '🇰🇾', '🇨🇫', '🇹🇩', '🇨🇱', '🇨🇳', '🇨🇽', '🇨🇨', '🇨🇴', '🇰🇲', '🇨🇬', '🇨🇩', '🇨🇰', '🇨🇷', '🇨🇮', '🇭🇷', '🇨🇺', '🇨🇼', '🇨🇾', '🇨🇿', '🇩🇰', '🇩🇯', '🇩🇲', '🇩🇴', '🇪🇨', '🇪🇬', '🇸🇻', '🇬🇶', '🇪🇷', '🇪🇪', '🇪🇹', '🇪🇺', '🇫🇰', '🇫🇴', '🇫🇯', '🇫🇮', '🇫🇷'] },
+  { id: 'smileys', label: 'Смайлы', icon: '😊', emojis: ['😀', '😃', '😄', '😁', '😆', '😅', '🤣', '😂', '🙂', '🙃', '😉', '😊', '😇', '🥰', '😍', '🤩', '😘', '😗', '😚', '😙', '😋', '😛', '😜', '🤪', '😝', '🤑', '🤗', '🤭', '🤫', '🤔', '🤐', '🤨', '😐', '😑', '😶', '😏', '😒', '🙄', '😬'] },
+  { id: 'people', label: 'Люди и жесты', icon: '👋', emojis: ['👍', '👎', '👌', '✌️', '🤞', '🤟', '🤘', '🤙', '👈', '👉', '👆', '👇', '☝️', '👋', '🤚', '🖐️', '✋', '🖖', '👏', '🙌', '👐', '🤲', '🤝', '🙏', '✍️', '💪', '🦵', '🦶', '👂', '👃', '🧠', '🦷', '👀', '👁️', '👅', '👄'] },
+  { id: 'animals', label: 'Животные', icon: '🐱', emojis: ['🐶', '🐱', '🐭', '🐹', '🐰', '🦊', '🐻', '🐼', '🐨', '🐯', '🦁', '🐮', '🐷', '🐸', '🐵', '🙈', '🙉', '🙊', '🐔', '🐧', '🐦', '🐤', '🐣', '🐥', '🦆', '🦢', '🦉', '🦚', '🦜', '🐺', '🐗', '🐴', '🦄', '🐝', '🐛', '🦋', '🐌', '🐞', '🐜', '🦟', '🦗', '🕷️', '🕸️', '🦂', '🦀', '🦞', '🦐', '🦑', '🐙', '🦈', '🐬', '🐳', '🐋', '🐊', '🐆', '🐅', '🐃', '🐂', '🐄', '🦌', '🐪', '🐫', '🦙', '🦒', '🐘', '🦏', '🦛', '🐐', '🐏', '🐑', '🦍', '🦧', '🐒'] },
+  { id: 'food', label: 'Еда и напитки', icon: '🍔', emojis: ['🍏', '🍎', '🍐', '🍊', '🍋', '🍌', '🍉', '🍇', '🍓', '🍈', '🍒', '🍑', '🥭', '🍍', '🥥', '🥝', '🍅', '🍆', '🥑', '🥦', '🥬', '🥒', '🌶️', '🌽', '🥕', '🧄', '🧅', '🥔', '🍠', '🌰', '🥜', '🍯', '🥓', '🍔', '🍟', '🍕', '🌭', '🥪', '🌮', '🌯', '🥙', '🍝', '🥘', '🥫', '🍜', '🍲', '🍛', '🍣', '🍱', '🥟', '🦪', '🍤', '🍙', '🍚', '🍘', '🍥', '🥠', '🥮', '🍢', '🍡', '🍧', '🍨', '🍦', '🥧', '🧁', '🍰', '🎂', '🍮', '🍭', '🍬', '🍫', '🍿', '🍩', '🍪', '🌰', '☕', '🍵', '🧃', '🥤', '🍶', '🍺', '🍻', '🥂', '🍷', '🥃', '🍸', '🍹', '🧉', '🍾'] },
+  { id: 'activity', label: 'Активности', icon: '⚽', emojis: ['⚽', '🏀', '🏈', '⚾', '🥎', '🎾', '🏐', '🏉', '🥏', '🎱', '🪀', '🏓', '🏸', '🏒', '🏑', '🥍', '🏏', '🥅', '⛳', '🪁', '🏹', '🎣', '🤿', '🥊', '🥋', '🎽', '🛹', '🛷', '⛸️', '🥌', '🎿', '⛷️', '🏂', '🪂', '🏋️', '🤼', '🤸', '⛹️', '🤺', '🤾', '🏌️', '🏇', '🧘', '🏄', '🏊', '🤽', '🚣', '🧗', '🚵', '🚴'] },
+  { id: 'travel', label: 'Путешествия', icon: '🚗', emojis: ['🚗', '🚕', '🚙', '🚌', '🚎', '🏎️', '🚓', '🚑', '🚒', '🚐', '🛻', '🚚', '🚛', '🚜', '🛵', '🏍️', '🛺', '🚲', '🛴', '🛹', '🚅', '🚄', '🚂', '🚆', '🚇', '🚊', '🚉', '✈️', '🛫', '🛬', '🛩️', '💺', '🛰️', '🚀', '🛸', '🚁', '🛶', '⛵', '🚤', '🛥️', '🛳️', '⛴️', '🚢', '⚓', '🚧', '⛽', '🚏', '🚦', '🚥', '🗿', '🗽', '🗼', '🏰', '🏯', '🏟️', '🎡', '🎢', '🎠', '⛲', '⛱️', '🏖️', '🏝️', '🏜️', '🌋', '⛰️', '🏔️', '🗻', '🏕️', '⛺', '🏠', '🏡', '🏘️', '🏚️', '🏗️', '🏢', '🏬', '🏣', '🏤', '🏥', '🏦', '🏨', '🏪', '🏫', '🏩', '💒', '🏛️', '⛪', '🕌', '🕍', '🛕', '🕋', '⛩️'] },
+  { id: 'symbols', label: 'Символы', icon: '💯', emojis: ['❤️', '🧡', '💛', '💚', '💙', '💜', '🤎', '🖤', '🤍', '💔', '❣️', '💕', '💞', '💓', '💗', '💖', '💘', '💝', '💟', '☮️', '✝️', '☪️', '🕉️', '☸️', '✡️', '🔯', '🪯', '🕎', '☯️', '☦️', '🛐', '⛎', '♈', '♉', '♊', '♋', '♌', '♍', '♎', '♏', '♐', '♑', '♒', '♓', '🆔', '⚛️', '🉑', '☢️', '☣️', '📴', '📳', '🈶', '🈚', '🈸', '🈺', '🈷️', '✴️', '🆚', '💮', '🉐', '㊙️', '㊗️', '🈴', '🈵', '🈹', '🈲', '🅰️', '🅱️', '🆎', '🆑', '🅾️', '🆘', '❌', '⭕', '🛑', '⛔', '📛', '🚫', '💯', '💢', '♨️', '🚷', '🚯', '🚳', '🚱', '🔞', '📵', '🚭', '❗', '❕', '❓', '❔', '‼️', '⁉️', '🔅', '🔆', '〽️', '⚠️', '🚸', '🔱', '⚜️', '🔰', '♻️', '✅', '🈯', '💹', '❇️', '✳️', '❎'] },
+  { id: 'flags', label: 'Флаги', icon: '🏳️', emojis: ['🏁', '🚩', '🏴', '🏳️', '🏳️‍🌈', '🏳️‍⚧️', '🏴‍☠️', '🇦🇫', '🇦🇽', '🇦🇱', '🇩🇿', '🇦🇸', '🇦🇩', '🇦🇴', '🇦🇮', '🇦🇶', '🇦🇬', '🇦🇷', '🇦🇲', '🇦🇼', '🇦🇺', '🇦🇹', '🇦🇿', '🇧🇸', '🇧🇭', '🇧🇩', '🇧🇧', '🇧🇾', '🇧🇪', '🇧🇿', '🇧🇯', '🇧🇲', '🇧🇹', '🇧🇴', '🇧🇦', '🇧🇼', '🇧🇷', '🇧🇳', '🇧🇬', '🇧🇫', '🇧🇮', '🇰🇭', '🇨🇲', '🇨🇦', '🇮🇨', '🇨🇻', '🇧🇶', '🇰🇾', '🇨🇫', '🇹🇩', '🇨🇱', '🇨🇳', '🇨🇽', '🇨🇨', '🇨🇴', '🇰🇲', '🇨🇬', '🇨🇩', '🇨🇰', '🇨🇷', '🇨🇮', '🇭🇷', '🇨🇺', '🇨🇼', '🇨🇾', '🇨🇿', '🇩🇰', '🇩🇯', '🇩🇲', '🇩🇴', '🇪🇨', '🇪🇬', '🇸🇻', '🇬🇶', '🇪🇷', '🇪🇪', '🇪🇹', '🇪🇺', '🇫🇰', '🇫🇴', '🇫🇯', '🇫🇮', '🇫🇷'] },
 ];
 
 // Отфильтрованные эмодзи на основе текущей категории
@@ -207,6 +225,7 @@ function handleEnterKey(event) {
   }
   
   // Иначе отправляем сообщение
+  event.preventDefault();
   sendMessage();
 }
 
@@ -236,7 +255,7 @@ function sendMessage() {
 
 // Открытие диалога выбора файла
 function openFileInput() {
-  fileInput.value.click();
+  fileInput.value?.click();
 }
 
 // Обработка загрузки файла
@@ -295,6 +314,8 @@ function formatFileSize(bytes) {
 // Вставка эмодзи в сообщение
 function insertEmoji(emoji) {
   const textarea = messageInput.value;
+  if (!textarea) return;
+
   const start = textarea.selectionStart;
   const end = textarea.selectionEnd;
   
@@ -310,32 +331,44 @@ function insertEmoji(emoji) {
 
 // Переключение панели эмодзи
 function toggleEmojiPicker() {
-  showEmojiPicker.value = !showEmojiPicker.value;
+  if (showEmojiPicker.value) {
+    closeEmojiPicker(true);
+    return;
+  }
+
+  showEmojiPicker.value = true;
+  nextTick(() => emojiPicker.value?.focus());
+}
+
+function closeEmojiPicker(restoreFocus = false) {
+  if (!showEmojiPicker.value) return;
+  showEmojiPicker.value = false;
+
+  if (restoreFocus) {
+    nextTick(() => emojiToggleButton.value?.focus());
+  }
 }
 
 // Обработка клика вне панели эмодзи для её закрытия
 function handleClickOutside(event) {
-  const emojiPicker = document.querySelector('.emoji-picker');
-  const emojiButton = document.querySelector('.action-button');
-  
-  if (
-    showEmojiPicker.value && 
-    emojiPicker && 
-    !emojiPicker.contains(event.target) && 
-    emojiButton && 
-    !emojiButton.contains(event.target)
-  ) {
-    showEmojiPicker.value = false;
-  }
+  if (!showEmojiPicker.value) return;
+
+  const eventPath = typeof event.composedPath === 'function' ? event.composedPath() : [];
+  const clickedInsidePicker = eventPath.includes(emojiPicker.value) || emojiPicker.value?.contains(event.target);
+  const clickedToggle = eventPath.includes(emojiToggleButton.value) || emojiToggleButton.value?.contains(event.target);
+
+  if (!clickedInsidePicker && !clickedToggle) closeEmojiPicker();
 }
 
 // Обработка вставки из буфера обмена
 function handlePaste(event) {
-  const items = (event.clipboardData || event.originalEvent.clipboardData).items;
+  const items = (event.clipboardData || event.originalEvent?.clipboardData)?.items;
+  if (!items) return;
   
   for (const item of items) {
     if (item.kind === 'file') {
       const file = item.getAsFile();
+      if (!file) continue;
       
       // Проверка размера файла
       if (file.size > props.maxFileSize) {
@@ -352,6 +385,7 @@ function handlePaste(event) {
 // Автоматическое изменение высоты textarea
 function adjustTextareaHeight() {
   const textarea = messageInput.value;
+  if (!textarea) return;
   
   // Сбрасываем высоту, чтобы правильно измерить содержимое
   textarea.style.height = 'auto';
@@ -369,7 +403,7 @@ onMounted(() => {
   adjustTextareaHeight();
   
   // Добавляем обработчик клика для закрытия панели эмодзи
-  document.addEventListener('click', handleClickOutside);
+  document.addEventListener('pointerdown', handleClickOutside);
   
   // Фокус на поле ввода
   nextTick(() => {
@@ -379,7 +413,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   // Удаляем обработчик клика
-  document.removeEventListener('click', handleClickOutside);
+  document.removeEventListener('pointerdown', handleClickOutside);
 });
 
 // Наблюдаем за изменениями сообщения для автоматической настройки высоты
@@ -396,43 +430,36 @@ watch(message, () => {
   width: 100%;
 }
 
-.loading-spinner {
-  border: 2px solid transparent;
-  border-top-color: #5865f2;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
 .message-input {
-  min-height: 40px;
+  min-height: 56px;
   max-height: 150px;
+  line-height: 1.5;
 }
 
 .emoji-picker {
   width: 320px;
 }
 
-.emoji-grid {
+.custom-scrollbar {
   scrollbar-width: thin;
-  scrollbar-color: #202225 #2f3136;
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
 }
 
-.emoji-grid::-webkit-scrollbar {
-  width: 8px;
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
 }
 
-.emoji-grid::-webkit-scrollbar-track {
-  background: #2f3136;
-  border-radius: 4px;
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
 }
 
-.emoji-grid::-webkit-scrollbar-thumb {
-  background-color: #202225;
-  border-radius: 4px;
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
 }
-</style> 
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.3);
+}
+</style>

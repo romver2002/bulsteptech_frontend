@@ -2,12 +2,9 @@ import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import App from './App.vue'
 import router from './router'
-import './style.css'
 import './assets/main.css'
+import './style.css'
 import i18n from './i18n'
-
-import { useUserStore } from './stores/user'
-import { useChannelStore } from './stores/channels'
 
 const app = createApp(App)
 const pinia = createPinia()

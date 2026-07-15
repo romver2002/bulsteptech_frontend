@@ -2,17 +2,16 @@
   <transition name="toast">
     <div 
       v-if="show" 
-      class="notification-toast fixed z-50"
-      :class="[
-        positionClasses,
-        typeClasses
-      ]"
+      class="notification-toast pointer-events-auto w-full overflow-hidden rounded-lg"
+      :class="typeClasses"
+      :role="type === 'error' ? 'alert' : 'status'"
+      :aria-live="type === 'error' ? 'assertive' : 'polite'"
     >
-      <div class="flex items-center p-4 rounded-lg shadow-lg max-w-sm">
-        <div class="mr-3 text-xl" v-if="type === 'success'">✅</div>
-        <div class="mr-3 text-xl" v-else-if="type === 'error'">❌</div>
-        <div class="mr-3 text-xl" v-else-if="type === 'info'">ℹ️</div>
-        <div class="mr-3 text-xl" v-else-if="type === 'warning'">⚠️</div>
+      <div class="flex w-full items-center rounded-lg p-4 shadow-lg">
+        <div v-if="type === 'success'" class="mr-3 text-xl" aria-hidden="true">✅</div>
+        <div v-else-if="type === 'error'" class="mr-3 text-xl" aria-hidden="true">❌</div>
+        <div v-else-if="type === 'info'" class="mr-3 text-xl" aria-hidden="true">ℹ️</div>
+        <div v-else-if="type === 'warning'" class="mr-3 text-xl" aria-hidden="true">⚠️</div>
         
         <div class="flex-1">
           <p class="font-semibold text-sm" v-if="title">{{ title }}</p>
@@ -20,8 +19,10 @@
         </div>
         
         <button 
+          type="button"
           @click="closeToast" 
-          class="ml-2 text-discord-text-gray hover:text-white"
+          class="ml-2 rounded-md p-1 text-white/75 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80"
+          aria-label="Закрыть уведомление"
         >
           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
             <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
@@ -49,11 +50,6 @@ const props = defineProps({
     default: 'info',
     validator: (value) => ['success', 'error', 'warning', 'info'].includes(value)
   },
-  position: {
-    type: String,
-    default: 'top-right',
-    validator: (value) => ['top-right', 'top-left', 'bottom-right', 'bottom-left', 'top-center', 'bottom-center'].includes(value)
-  },
   timeout: {
     type: Number,
     default: 3000
@@ -68,6 +64,7 @@ const emit = defineEmits(['close']);
 
 const show = ref(true);
 let timeoutId = null;
+let closeDelayId = null;
 
 const typeClasses = computed(() => {
   switch (props.type) {
@@ -79,23 +76,18 @@ const typeClasses = computed(() => {
   }
 });
 
-const positionClasses = computed(() => {
-  switch (props.position) {
-    case 'top-left': return 'top-4 left-4';
-    case 'bottom-right': return 'bottom-4 right-4';
-    case 'bottom-left': return 'bottom-4 left-4';
-    case 'top-center': return 'top-4 left-1/2 -translate-x-1/2';
-    case 'bottom-center': return 'bottom-4 left-1/2 -translate-x-1/2';
-    case 'top-right':
-    default: return 'top-4 right-4';
-  }
-});
-
 const closeToast = () => {
+  if (!show.value) return;
+
   show.value = false;
-  setTimeout(() => {
+  if (timeoutId) {
+    clearTimeout(timeoutId);
+    timeoutId = null;
+  }
+
+  closeDelayId = setTimeout(() => {
     emit('close');
-  }, 300); // Подождем завершения анимации
+  }, 300);
 };
 
 onMounted(() => {
@@ -108,6 +100,9 @@ onBeforeUnmount(() => {
   if (timeoutId) {
     clearTimeout(timeoutId);
   }
+  if (closeDelayId) {
+    clearTimeout(closeDelayId);
+  }
 });
 </script>
 
@@ -118,7 +113,7 @@ onBeforeUnmount(() => {
 
 .toast-enter-active,
 .toast-leave-active {
-  transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  transition: opacity 0.25s ease, transform 0.25s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .toast-enter-from {
@@ -129,5 +124,12 @@ onBeforeUnmount(() => {
 .toast-leave-to {
   opacity: 0;
   transform: translateY(-20px) scale(0.8);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast-enter-active,
+  .toast-leave-active {
+    transition-duration: 0.01ms;
+  }
 }
 </style>

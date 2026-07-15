@@ -1,113 +1,105 @@
 <template>
-  <div class="message-list">
-    <div v-if="loading" class="flex justify-center items-center py-8">
-      <div class="loading-spinner mr-2"></div>
-      <span class="text-discord-text-gray">Загрузка сообщений...</span>
+  <div class="message-list flex-1">
+    <div v-if="loading" class="flex justify-center items-center py-10">
+      <div class="loading-spinner mr-3 w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+      <span class="text-indigo-300 font-medium tracking-wide">Синхронизация...</span>
     </div>
     
-    <div v-else-if="messages.length === 0" class="empty-messages py-10 text-center">
-      <div class="text-5xl mb-3">💬</div>
-      <h3 class="text-lg font-medium mb-2">Нет сообщений</h3>
-      <p class="text-discord-text-gray text-sm">Начните общение прямо сейчас!</p>
+    <div v-else-if="messages.length === 0" class="empty-messages py-16 text-center animate-fade-in">
+      <div class="text-6xl mb-6 drop-shadow-xl transform transition-transform hover:scale-110">💭</div>
+      <h3 class="text-2xl font-bold mb-2 text-white bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-purple-400">Пустота...</h3>
+      <p class="text-gray-400 font-medium">Станьте первым, кто нарушит тишину!</p>
     </div>
     
-    <div v-else class="messages-container space-y-4">
-      <div v-for="(group, index) in messageGroups" :key="index" class="message-group">
-        <div class="message-date-divider flex items-center justify-center my-4" v-if="group.showDivider">
-          <div class="line flex-grow h-px bg-discord-dark-hover"></div>
-          <div class="date-label px-2 text-xs text-discord-text-gray">{{ formatDateDivider(group.date) }}</div>
-          <div class="line flex-grow h-px bg-discord-dark-hover"></div>
+    <div v-else class="messages-container space-y-6">
+      <div v-for="(group, index) in messageGroups" :key="index" class="message-group animate-slide-up">
+        <div class="message-date-divider flex items-center justify-center my-6" v-if="group.showDivider">
+          <div class="line flex-grow h-px bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
+          <div class="date-label px-4 py-1 rounded-full bg-white/5 border border-white/5 text-xs font-bold text-gray-400 uppercase tracking-widest shadow-inner">{{ formatDateDivider(group.date) }}</div>
+          <div class="line flex-grow h-px bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
         </div>
         
         <div v-for="message in group.messages" :key="message.id" class="message-wrapper">
           <div class="message" :class="{ 'system-message': message.type === 'system' }">
             <!-- Системное сообщение -->
-            <div v-if="message.type === 'system'" class="system-message flex items-center justify-center py-1">
-              <span class="text-xs text-discord-text-gray bg-discord-dark rounded-full px-3 py-1">
+            <div v-if="message.type === 'system'" class="system-message flex items-center justify-center py-2">
+              <span class="text-xs text-indigo-300 font-medium bg-indigo-500/10 border border-indigo-500/20 rounded-full px-4 py-1.5 shadow-[0_0_10px_rgba(99,102,241,0.1)]">
                 {{ message.content }}
               </span>
             </div>
             
             <!-- Обычное сообщение -->
-            <div v-else class="user-message flex">
-              <!-- Аватар пользователя (показываем только для первого сообщения в группе) -->
-              <div v-if="message.showAvatar" class="avatar-container mt-1 mr-3">
-                <div v-if="message.avatar" class="avatar w-10 h-10 rounded-full overflow-hidden flex-shrink-0">
+            <div v-else class="user-message flex items-start group/msg p-2 rounded-2xl hover:bg-white/5 transition-colors border border-transparent hover:border-white/5">
+              <!-- Аватар пользователя -->
+              <div v-if="message.showAvatar" class="avatar-container mt-1 mr-4">
+                <div v-if="message.avatar" class="avatar w-11 h-11 rounded-full overflow-hidden flex-shrink-0 shadow-lg border border-white/10">
                   <img :src="message.avatar" :alt="message.username" class="w-full h-full object-cover">
                 </div>
-                <div v-else class="avatar-placeholder w-10 h-10 rounded-full bg-discord-accent flex items-center justify-center text-white font-medium flex-shrink-0">
+                <div v-else class="avatar-placeholder w-11 h-11 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold flex-shrink-0 shadow-glow border border-white/20">
                   {{ message.username ? message.username.charAt(0).toUpperCase() : 'U' }}
                 </div>
               </div>
-              <div v-else class="avatar-spacer w-10 mr-3"></div>
+              <div v-else class="avatar-spacer w-11 mr-4 flex items-center justify-center opacity-0 group-hover/msg:opacity-100 transition-opacity">
+                <span class="text-[10px] text-gray-500 font-bold uppercase">{{ formatTime(message.timestamp) }}</span>
+              </div>
               
               <div class="message-content flex-1 min-w-0">
-                <!-- Имя пользователя и время (показываем только для первого сообщения) -->
-                <div v-if="message.showHeader" class="message-header flex items-baseline">
-                  <div class="username font-medium" :class="message.roleColor || 'text-white'">
+                <!-- Имя пользователя и время -->
+                <div v-if="message.showHeader" class="message-header flex items-baseline mb-1">
+                  <div class="username font-bold tracking-wide" :class="message.roleColor || 'text-white'">
                     {{ message.username }}
                   </div>
                   
-                  <div v-if="message.role" class="user-role ml-2 px-1.5 py-0.5 text-xs rounded" :class="getRoleBadgeClass(message.role)">
+                  <div v-if="message.role" class="user-role ml-3 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-full shadow-sm" :class="getRoleBadgeClass(message.role)">
                     {{ getRoleLabel(message.role) }}
                   </div>
                   
-                  <div class="message-time ml-2 text-xs text-discord-text-gray">
+                  <div class="message-time ml-3 text-xs text-gray-500 font-medium">
                     {{ formatTime(message.timestamp) }}
                   </div>
                 </div>
                 
                 <!-- Текст сообщения -->
-                <div class="message-text break-words text-discord-text-light" :class="{'mt-0.5': message.showHeader}">
+                <div class="message-text break-words text-gray-300 leading-relaxed text-[15px]" :class="{'mt-1': message.showHeader}">
                   {{ message.content }}
                 </div>
                 
                 <!-- Вложения -->
-                <div v-if="message.attachments && message.attachments.length > 0" class="message-attachments mt-2 space-y-2">
+                <div v-if="message.attachments && message.attachments.length > 0" class="message-attachments mt-3 space-y-3">
                   <div v-for="(attachment, idx) in message.attachments" :key="idx" class="attachment">
-                    <div v-if="isImage(attachment.url)" class="image-attachment">
+                    <div v-if="isImage(attachment)" class="image-attachment">
                       <img 
                         :src="attachment.url" 
                         :alt="attachment.name" 
-                        class="max-w-full rounded-md max-h-60 cursor-pointer hover:opacity-90"
+                        class="max-w-md w-full rounded-xl shadow-lg border border-white/10 cursor-pointer hover:opacity-90 hover:shadow-xl transition-all"
                         @click="openAttachment(attachment)"
                       >
                     </div>
-                    <div v-else class="file-attachment bg-discord-dark rounded-md p-2 flex items-center">
-                      <div class="file-icon mr-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-discord-text-gray" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    <div v-else class="file-attachment bg-black/40 border border-white/10 rounded-xl p-3 flex items-center w-72 hover:bg-white/5 transition-colors cursor-pointer group/file" @click="openAttachment(attachment)">
+                      <div class="p-2.5 bg-white/5 rounded-lg mr-4 group-hover/file:bg-indigo-500/20 transition-colors shadow-inner">
+                        <svg class="w-6 h-6 text-indigo-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                         </svg>
                       </div>
-                      <div class="file-info">
-                        <div class="file-name text-sm font-medium text-white">{{ attachment.name }}</div>
-                        <div class="file-size text-xs text-discord-text-gray">{{ formatFileSize(attachment.size) }}</div>
+                      <div class="file-info flex-1 truncate">
+                        <div class="file-name text-sm font-bold text-white truncate group-hover/file:text-indigo-300 transition-colors">{{ attachment.name }}</div>
+                        <div class="file-size text-xs text-gray-500 font-medium">{{ formatFileSize(attachment.size) }}</div>
                       </div>
-                      <a 
-                        :href="attachment.url" 
-                        download 
-                        class="download-button ml-auto text-discord-accent hover:underline text-sm flex items-center"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                        </svg>
-                        Скачать
-                      </a>
                     </div>
                   </div>
                 </div>
                 
                 <!-- Реакции -->
-                <div v-if="message.reactions && message.reactions.length > 0" class="message-reactions flex flex-wrap mt-2 gap-1">
+                <div v-if="message.reactions && message.reactions.length > 0" class="message-reactions flex flex-wrap mt-3 gap-2">
                   <button 
                     v-for="reaction in message.reactions" 
                     :key="reaction.emoji"
-                    class="reaction-button flex items-center bg-discord-dark hover:bg-discord-dark-hover rounded-md px-1.5 py-0.5 text-xs transition-colors"
-                    :class="{ 'border border-discord-accent border-opacity-50': hasUserReacted(message.id, reaction.emoji) }"
+                    class="reaction-button flex items-center rounded-full px-3 py-1 text-xs transition-all shadow-sm border"
+                    :class="hasUserReacted(message.id, reaction.emoji) ? 'bg-indigo-500/20 border-indigo-500/40 shadow-[0_0_8px_rgba(99,102,241,0.2)]' : 'bg-black/30 border-white/10 hover:bg-white/10 hover:border-white/20'"
                     @click="toggleReaction(message.id, reaction.emoji)"
                   >
-                    <span class="emoji mr-1">{{ reaction.emoji }}</span>
-                    <span class="count text-discord-text-gray">{{ reaction.count }}</span>
+                    <span class="emoji mr-1.5 text-sm">{{ reaction.emoji }}</span>
+                    <span class="count font-bold" :class="hasUserReacted(message.id, reaction.emoji) ? 'text-indigo-300' : 'text-gray-400'">{{ reaction.count }}</span>
                   </button>
                 </div>
               </div>
@@ -123,11 +115,11 @@
     >
       <button 
         @click="loadMoreMessages" 
-        class="load-more-button px-4 py-2 rounded-md bg-discord-dark hover:bg-discord-dark-hover text-discord-text-light text-sm"
+        class="load-more-button px-6 py-2 rounded-full border border-white/10 bg-white/5 hover:bg-white/10 text-white font-medium text-sm transition-all"
         :disabled="loadingMore"
       >
         <div v-if="loadingMore" class="flex items-center">
-          <div class="loading-spinner mr-2 w-4 h-4"></div>
+          <div class="loading-spinner mr-3 w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
           <span>Загрузка...</span>
         </div>
         <span v-else>Загрузить предыдущие сообщения</span>
@@ -196,9 +188,9 @@ const messageGroups = computed(() => {
     // Устанавливаем стиль для роли пользователя
     let roleColor = '';
     if (message.role === 'teacher') {
-      roleColor = 'text-discord-success';
+      roleColor = 'text-emerald-400';
     } else if (message.role === 'admin') {
-      roleColor = 'text-discord-error';
+      roleColor = 'text-rose-400';
     }
     
     currentGroup.messages.push({
@@ -270,8 +262,8 @@ const formatTime = (timestamp) => {
 };
 
 // Проверка типа файла
-const isImage = (url) => {
-  return /\.(jpg|jpeg|png|gif|webp)$/i.test(url);
+const isImage = (attachment) => {
+  return attachment?.type?.startsWith('image/') || /\.(jpg|jpeg|png|gif|webp)(?:\?.*)?$/i.test(attachment?.url || '');
 };
 
 // Форматирование размера файла
@@ -303,10 +295,10 @@ const getRoleLabel = (role) => {
 // Получение класса для бейджа роли
 const getRoleBadgeClass = (role) => {
   switch (role) {
-    case 'teacher': return 'bg-discord-success bg-opacity-20 text-discord-success';
-    case 'admin': return 'bg-discord-error bg-opacity-20 text-discord-error';
-    case 'student': return 'bg-discord-accent bg-opacity-20 text-discord-accent';
-    default: return 'bg-discord-text-gray bg-opacity-20 text-discord-text-gray';
+    case 'teacher': return 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30';
+    case 'admin': return 'bg-rose-500/20 text-rose-400 border border-rose-500/30';
+    case 'student': return 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30';
+    default: return 'bg-white/10 text-gray-400 border border-white/5';
   }
 };
 </script>
@@ -317,37 +309,11 @@ const getRoleBadgeClass = (role) => {
   height: 100%;
 }
 
-.loading-spinner {
-  width: 18px;
-  height: 18px;
-  border: 2px solid transparent;
-  border-top-color: #5865f2;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
 .user-message {
-  transition: background-color 0.1s ease;
-  margin-left: -8px;
-  margin-right: -8px;
-  padding: 2px 8px;
-  border-radius: 4px;
-}
-
-.user-message:hover {
-  background-color: rgba(32, 34, 37, 0.3);
-}
-
-.system-message {
-  margin: 8px 0;
+  transition: all 0.2s ease;
 }
 
 .reaction-button {
   cursor: pointer;
 }
-</style> 
+</style>

@@ -1,6 +1,6 @@
 <template>
   <div class="assignments-container bg-discord-secondary p-4 rounded-lg">
-    <h3 class="text-lg font-semibold mb-4">Управление заданиями</h3>
+    <h3 class="text-lg font-semibold mb-4">{{ isTeacher ? 'Управление заданиями' : 'Мои задания' }}</h3>
     
     <!-- Фильтры и поиск -->
     <div class="mb-4 flex flex-wrap gap-3">
@@ -88,7 +88,18 @@
           </button>
           
           <button
-            v-if="isTeacher || assignment.status === 'to-do'"
+            v-if="isTeacher"
+            type="button"
+            @click="handleTeacherAction(assignment)"
+            class="text-sm px-2 py-1 rounded-md"
+            :class="getTeacherActionClass(assignment.status)"
+          >
+            {{ getTeacherActionLabel(assignment.status) }}
+          </button>
+
+          <button
+            v-else-if="assignment.status !== 'completed'"
+            type="button"
             @click="toggleAssignmentStatus(assignment)"
             class="text-sm px-2 py-1 rounded-md"
             :class="getActionClass(assignment.status)"
@@ -106,12 +117,26 @@
     </div>
     
     <!-- Модальное окно с подробностями задания -->
-    <div v-if="selectedAssignment" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50">
+    <div
+      v-if="selectedAssignment"
+      class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="assignment-dialog-title"
+      @click.self="selectedAssignment = null"
+    >
       <div class="bg-discord-secondary rounded-lg max-w-2xl w-full">
         <div class="p-6">
           <div class="flex justify-between items-start mb-4">
-            <h3 class="text-xl font-semibold">{{ selectedAssignment.title }}</h3>
-            <button @click="selectedAssignment = null" class="text-discord-text-gray hover:text-white">
+            <input
+              v-if="isTeacher && isEditing"
+              id="assignment-dialog-title"
+              v-model.trim="selectedAssignment.title"
+              class="min-w-0 flex-1 rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-xl font-semibold text-white outline-none focus:border-indigo-400/50"
+              aria-label="Название задания"
+            >
+            <h3 v-else id="assignment-dialog-title" class="text-xl font-semibold">{{ selectedAssignment.title }}</h3>
+            <button type="button" aria-label="Закрыть задание" @click="selectedAssignment = null" class="text-discord-text-gray hover:text-white">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                 <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
               </svg>
@@ -133,7 +158,14 @@
           
           <div class="mb-4">
             <h4 class="text-sm text-discord-text-gray mb-1">Описание:</h4>
-            <p class="text-discord-text-light">{{ selectedAssignment.description }}</p>
+            <textarea
+              v-if="isTeacher && isEditing"
+              v-model.trim="selectedAssignment.description"
+              rows="4"
+              class="w-full resize-y rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-discord-text-light outline-none focus:border-indigo-400/50"
+              aria-label="Описание задания"
+            ></textarea>
+            <p v-else class="text-discord-text-light">{{ selectedAssignment.description }}</p>
           </div>
           
           <div class="mb-4">
@@ -148,6 +180,7 @@
                   type="checkbox" 
                   :id="`task-${index}`" 
                   v-model="task.completed"
+                  :disabled="isTeacher"
                   class="mr-2"
                   @change="updateTaskStatus(index)"
                 >
@@ -166,6 +199,7 @@
                 :key="index"
                 :href="resource.url"
                 target="_blank"
+                rel="noopener noreferrer"
                 class="flex items-center p-2 bg-discord-dark rounded-md hover:bg-discord-dark-hover"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2 text-discord-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -178,7 +212,25 @@
           
           <div class="flex justify-end">
             <button
-              v-if="selectedAssignment.status !== 'completed'"
+              v-if="isTeacher && isEditing"
+              type="button"
+              @click="saveAssignmentEdits"
+              class="px-4 py-2 rounded-md bg-discord-accent hover:bg-discord-accent-hover text-white"
+            >
+              Сохранить изменения
+            </button>
+            <button
+              v-else-if="isTeacher"
+              type="button"
+              @click="handleTeacherAction(selectedAssignment)"
+              class="px-4 py-2 rounded-md text-white"
+              :class="getTeacherActionClass(selectedAssignment.status)"
+            >
+              {{ getTeacherActionLabel(selectedAssignment.status) }}
+            </button>
+            <button
+              v-else-if="selectedAssignment.status !== 'completed'"
+              type="button"
               @click="submitAssignment"
               class="px-4 py-2 bg-discord-accent rounded-md hover:bg-discord-accent-hover text-white"
             >
@@ -192,8 +244,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
-import { useUserStore } from '../../stores/user';
+import { ref, computed, onBeforeUnmount, onMounted } from 'vue';
 import { useNotificationStore } from '../../stores/notification';
 
 const props = defineProps({
@@ -203,12 +254,12 @@ const props = defineProps({
   }
 });
 
-const userStore = useUserStore();
 const notificationStore = useNotificationStore();
 
 const activeFilter = ref('all');
 const searchQuery = ref('');
 const selectedAssignment = ref(null);
+const isEditing = ref(false);
 
 // Фильтры
 const filters = [
@@ -323,10 +374,12 @@ const filteredAssignments = computed(() => {
 
 // Методы для работы с заданиями
 const viewAssignment = (assignment) => {
+  isEditing.value = false;
   selectedAssignment.value = JSON.parse(JSON.stringify(assignment));
 };
 
 const toggleAssignmentStatus = (assignment) => {
+  if (props.isTeacher) return;
   const index = assignments.value.findIndex(a => a.id === assignment.id);
   
   if (index !== -1) {
@@ -348,7 +401,7 @@ const toggleAssignmentStatus = (assignment) => {
 };
 
 const updateTaskStatus = (taskIndex) => {
-  if (!selectedAssignment.value) return;
+  if (!selectedAssignment.value || props.isTeacher) return;
   
   // Обновляем статус задачи
   const tasks = selectedAssignment.value.tasks;
@@ -373,7 +426,7 @@ const updateTaskStatus = (taskIndex) => {
 };
 
 const submitAssignment = () => {
-  if (!selectedAssignment.value) return;
+  if (!selectedAssignment.value || props.isTeacher) return;
   
   const index = assignments.value.findIndex(a => a.id === selectedAssignment.value.id);
   
@@ -395,6 +448,65 @@ const submitAssignment = () => {
     }
   }
 };
+
+const handleTeacherAction = (assignment) => {
+  const index = assignments.value.findIndex(item => item.id === assignment.id);
+  if (index === -1) return;
+
+  const current = assignments.value[index];
+  if (current.status === 'to-do') {
+    selectedAssignment.value = JSON.parse(JSON.stringify(current));
+    isEditing.value = true;
+    return;
+  }
+
+  if (current.status === 'in-progress') {
+    current.status = 'completed';
+    delete current.progress;
+    notificationStore.success('Работа принята');
+  } else {
+    current.status = 'in-progress';
+    current.progress = 100;
+    notificationStore.info('Работа возвращена на доработку');
+  }
+
+  if (selectedAssignment.value?.id === current.id) {
+    isEditing.value = false;
+    selectedAssignment.value = JSON.parse(JSON.stringify(current));
+  }
+};
+
+const saveAssignmentEdits = () => {
+  if (!selectedAssignment.value?.title.trim()) {
+    notificationStore.warning('Добавьте название задания');
+    return;
+  }
+
+  const index = assignments.value.findIndex(item => item.id === selectedAssignment.value.id);
+  if (index === -1) return;
+  assignments.value[index] = JSON.parse(JSON.stringify(selectedAssignment.value));
+  isEditing.value = false;
+  notificationStore.success('Изменения задания сохранены');
+};
+
+const getTeacherActionLabel = (status) => {
+  if (status === 'to-do') return 'Редактировать';
+  if (status === 'in-progress') return 'Принять работу';
+  return 'Вернуть на доработку';
+};
+
+const getTeacherActionClass = (status) => {
+  if (status === 'to-do') return 'bg-discord-accent hover:bg-discord-accent-hover';
+  if (status === 'in-progress') return 'bg-discord-success hover:bg-discord-success/90';
+  return 'bg-discord-warning hover:bg-discord-warning/90';
+};
+
+const handleEscape = (event) => {
+  if (event.key === 'Escape') selectedAssignment.value = null;
+};
+
+onMounted(() => document.addEventListener('keydown', handleEscape));
+onBeforeUnmount(() => document.removeEventListener('keydown', handleEscape));
 
 // Вспомогательные методы для отображения
 const getStatusLabel = (status) => {

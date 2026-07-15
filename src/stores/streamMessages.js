@@ -1,125 +1,184 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
 
+const DEFAULT_AVATARS = {
+  teacher: '',
+  student: ''
+};
+const MAX_STORED_MESSAGES = 500;
+
 export const useStreamMessagesStore = defineStore('streamMessages', () => {
-  // Сообщения чата трансляции
+  const managedObjectUrls = new Set();
+
   const messages = ref([
     {
       id: 1,
       userId: 1,
-      user: {
-        name: 'Иван Петров',
-        avatar: 'https://i.pravatar.cc/150?img=3',
-        role: 'teacher'
-      },
-      content: 'Добрый день всем! Сегодня мы рассмотрим основы Vue 3 и научимся создавать компоненты с Composition API.',
-      timestamp: new Date(Date.now() - 1000 * 60 * 10), // 10 минут назад
-      reactions: []
+      username: 'Иван Петров',
+      avatar: DEFAULT_AVATARS.teacher,
+      role: 'teacher',
+      content: 'Добрый день всем! Сегодня мы рассмотрим основы Vue 3 и Composition API.',
+      timestamp: new Date(Date.now() - 1000 * 60 * 10),
+      reactions: [],
+      attachments: []
     },
     {
       id: 2,
       userId: 2,
-      user: {
-        name: 'Алексей Иванов',
-        avatar: 'https://i.pravatar.cc/150?img=4',
-        role: 'student'
-      },
-      content: 'Добрый день! Очень жду сегодняшнюю лекцию',
-      timestamp: new Date(Date.now() - 1000 * 60 * 5), // 5 минут назад
+      username: 'Алексей Иванов',
+      avatar: DEFAULT_AVATARS.student,
+      role: 'student',
+      content: 'Добрый день! Очень жду сегодняшнюю лекцию.',
+      timestamp: new Date(Date.now() - 1000 * 60 * 5),
       reactions: [
-        { emoji: '👍', count: 2, users: [1, 3] }
-      ]
+        { emoji: '👍', userId: 1 },
+        { emoji: '👍', userId: 3 }
+      ],
+      attachments: []
     },
     {
       id: 3,
       userId: 3,
-      user: {
-        name: 'Мария Сидорова',
-        avatar: 'https://i.pravatar.cc/150?img=5',
-        role: 'student'
-      },
-      content: 'У меня есть вопрос по домашнему заданию, можно будет задать в конце лекции?',
-      timestamp: new Date(Date.now() - 1000 * 60 * 2), // 2 минуты назад
-      reactions: []
+      username: 'Мария Сидорова',
+      avatar: '',
+      role: 'student',
+      content: 'У меня есть вопрос по домашнему заданию. Можно будет задать его в конце лекции?',
+      timestamp: new Date(Date.now() - 1000 * 60 * 2),
+      reactions: [],
+      attachments: []
     }
   ]);
-  
-  // Отправка сообщения в чат
-  const sendMessage = (content, userId = 1, userName = 'Иван Петров', userAvatar = 'https://i.pravatar.cc/150?img=3', userRole = 'teacher') => {
-    if (!content.trim()) {
-      return;
+
+  const normalizeAttachments = (attachments = []) => attachments.map((attachment) => {
+    const normalized = {
+      name: attachment.name || 'Файл',
+      size: Number(attachment.size) || 0,
+      type: attachment.type || 'application/octet-stream',
+      url: attachment.url || '',
+      isObjectUrl: Boolean(attachment.isObjectUrl)
+    };
+
+    if (normalized.isObjectUrl && normalized.url) {
+      managedObjectUrls.add(normalized.url);
     }
-    
+
+    return normalized;
+  });
+
+  const releaseAttachment = (attachment) => {
+    if (!attachment?.isObjectUrl || !attachment.url || !managedObjectUrls.has(attachment.url)) return;
+    if (typeof URL !== 'undefined' && typeof URL.revokeObjectURL === 'function') {
+      URL.revokeObjectURL(attachment.url);
+    }
+    managedObjectUrls.delete(attachment.url);
+  };
+
+  const trimMessageHistory = () => {
+    const overflow = messages.value.length - MAX_STORED_MESSAGES;
+    if (overflow <= 0) return;
+
+    const removedMessages = messages.value.splice(0, overflow);
+    removedMessages.forEach(message => message.attachments?.forEach(releaseAttachment));
+  };
+
+  const sendMessage = (payload, legacyUserId, legacyUserName, legacyUserAvatar, legacyUserRole) => {
+    const data = typeof payload === 'string'
+      ? {
+          content: payload,
+          userId: legacyUserId,
+          username: legacyUserName,
+          avatar: legacyUserAvatar,
+          role: legacyUserRole
+        }
+      : (payload || {});
+
+    const content = String(data.content || '').trim();
+    const attachments = normalizeAttachments(data.attachments);
+
+    if (!content && attachments.length === 0) return null;
+
+    const role = data.role === 'teacher' ? 'teacher' : 'student';
     const newMessage = {
-      id: Date.now(),
-      userId,
-      user: {
-        name: userName,
-        avatar: userAvatar,
-        role: userRole
-      },
+      id: `stream-message-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      userId: Number(data.userId) || (role === 'teacher' ? 1 : 2),
+      username: data.username || (role === 'teacher' ? 'Преподаватель' : 'Студент'),
+      avatar: data.avatar || DEFAULT_AVATARS[role],
+      role,
       content,
       timestamp: new Date(),
-      reactions: []
+      reactions: [],
+      attachments,
+      replyTo: data.replyTo || null
     };
-    
+
     messages.value.push(newMessage);
+    trimMessageHistory();
     return newMessage;
   };
-  
-  // Добавление/удаление реакции
+
+  const addSystemMessage = (content) => {
+    const normalizedContent = String(content || '').trim();
+    if (!normalizedContent) return null;
+
+    const message = {
+      id: `stream-system-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      userId: 0,
+      username: 'Система',
+      avatar: '',
+      role: 'system',
+      content: normalizedContent,
+      timestamp: new Date(),
+      reactions: [],
+      attachments: []
+    };
+
+    messages.value.push(message);
+    trimMessageHistory();
+    return message;
+  };
+
   const toggleReaction = (messageId, emoji, userId = 1) => {
-    const message = messages.value.find(m => m.id === messageId);
-    if (!message) return;
-    
-    const reactionIndex = message.reactions.findIndex(r => r.emoji === emoji);
-    
+    const message = messages.value.find(item => item.id === messageId);
+    if (!message || !emoji) return false;
+
+    const normalizedUserId = Number(userId) || 1;
+    const reactionIndex = message.reactions.findIndex(
+      reaction => reaction.emoji === emoji && reaction.userId === normalizedUserId
+    );
+
     if (reactionIndex === -1) {
-      // Добавляем новую реакцию
-      message.reactions.push({
-        emoji,
-        count: 1,
-        users: [userId]
-      });
-    } else {
-      const reaction = message.reactions[reactionIndex];
-      const userIndex = reaction.users.indexOf(userId);
-      
-      if (userIndex === -1) {
-        // Пользователь еще не реагировал - добавляем реакцию
-        reaction.users.push(userId);
-        reaction.count++;
-      } else {
-        // Пользователь уже реагировал - убираем реакцию
-        reaction.users.splice(userIndex, 1);
-        reaction.count--;
-        
-        // Если больше нет реакций, удаляем весь объект реакции
-        if (reaction.count === 0) {
-          message.reactions.splice(reactionIndex, 1);
-        }
-      }
+      message.reactions.push({ emoji, userId: normalizedUserId });
+      return true;
     }
+
+    message.reactions.splice(reactionIndex, 1);
+    return false;
   };
-  
-  // Получение реакции пользователя
+
   const getUserReaction = (messageId, userId) => {
-    const message = messages.value.find(m => m.id === messageId);
-    if (!message) return null;
-    
-    for (const reaction of message.reactions) {
-      if (reaction.users.includes(userId)) {
-        return reaction.emoji;
-      }
-    }
-    
-    return null;
+    const message = messages.value.find(item => item.id === messageId);
+    return message?.reactions.find(reaction => reaction.userId === Number(userId))?.emoji || null;
   };
-  
+
+  const releaseObjectUrls = () => {
+    if (typeof URL === 'undefined' || typeof URL.revokeObjectURL !== 'function') return;
+
+    managedObjectUrls.forEach(url => URL.revokeObjectURL(url));
+    managedObjectUrls.clear();
+
+    messages.value.forEach((message) => {
+      message.attachments?.forEach((attachment) => {
+        if (attachment.isObjectUrl) attachment.url = '';
+      });
+    });
+  };
+
   return {
     messages,
     sendMessage,
+    addSystemMessage,
     toggleReaction,
-    getUserReaction
+    getUserReaction,
+    releaseObjectUrls
   };
-}); 
+});
