@@ -212,7 +212,8 @@ onMounted(async () => {
 // Следим за изменением канала
 watch(() => currentChannel.value.id, async () => {
   // Сбрасываем состояние и загружаем новые сообщения при смене канала
-  revokeCreatedObjectUrls();
+  // (object URL'ы не освобождаем здесь — сообщения живут в store и переживают
+  //  смену канала; освобождение в onUnmounted)
   messages.value = [];
   loading.value = true;
   hasMoreMessages.value = true;
@@ -240,32 +241,28 @@ async function loadMoreMessages() {
 // Обработка отправки сообщения
 function handleSendMessage(messageData) {
   if (isReadOnly.value) return;
-  // Создаем новое сообщение
-  const newMessage = {
-    id: `msg-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-    content: messageData.content,
+  // Вложения -> object URL (освобождаются в onUnmounted)
+  const attachments = messageData.attachments.map(file => {
+    const url = URL.createObjectURL(file);
+    createdObjectUrls.add(url);
+    return {
+      id: `attach-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      name: file.name,
+      url,
+      size: file.size,
+      type: file.type,
+      isObjectUrl: true
+    };
+  });
+
+  // Пишем в store (источник истины) — сообщение переживает смену канала
+  channelStore.addMessage({
     username: userStore.username,
-    role: userStore.role,
-    timestamp: new Date().toISOString(),
-    avatar: userStore.avatar,
-    attachments: messageData.attachments.map(file => {
-      const url = URL.createObjectURL(file);
-      createdObjectUrls.add(url);
-      return {
-        id: `attach-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-        name: file.name,
-        url,
-        size: file.size,
-        type: file.type,
-        isObjectUrl: true
-      };
-    }),
-    reactions: []
-  };
-  
-  // Добавляем сообщение в список
-  messages.value = [...messages.value, newMessage].slice(-300);
-  
+    content: messageData.content,
+    attachments
+  });
+  messages.value = [...channelStore.channelMessages];
+
   // Прокручиваем чат вниз
   nextTick(() => {
     scrollToBottom();
@@ -274,42 +271,9 @@ function handleSendMessage(messageData) {
 
 // Обработка реакций к сообщению
 function handleToggleReaction({ messageId, emoji }) {
-  const messageIndex = messages.value.findIndex(m => m.id === messageId);
-  if (messageIndex === -1) return;
-  
-  const message = messages.value[messageIndex];
-  const reactionIndex = message.reactions.findIndex(r => r.emoji === emoji);
-  
-  if (reactionIndex !== -1) {
-    // Если реакция уже есть
-    const reaction = message.reactions[reactionIndex];
-    const userReacted = reaction.users.includes(userStore.id);
-    
-    if (userReacted) {
-      // Удаляем пользователя из списка
-      reaction.users = reaction.users.filter(id => id !== userStore.id);
-      reaction.count--;
-      
-      // Если количество реакций стало 0, удаляем реакцию
-      if (reaction.count === 0) {
-        message.reactions.splice(reactionIndex, 1);
-      }
-    } else {
-      // Добавляем пользователя в список
-      reaction.users.push(userStore.id);
-      reaction.count++;
-    }
-  } else {
-    // Добавляем новую реакцию
-    message.reactions.push({
-      emoji,
-      count: 1,
-      users: [userStore.id]
-    });
-  }
-  
-  // Обновляем сообщение
-  messages.value[messageIndex] = { ...message };
+  // Реакции проводим через store, чтобы они сохранялись между каналами
+  channelStore.toggleReaction({ messageId, emoji, userId: userStore.id });
+  messages.value = [...channelStore.channelMessages];
 }
 
 // Открытие вложения
