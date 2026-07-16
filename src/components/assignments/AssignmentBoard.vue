@@ -417,7 +417,9 @@ const updateTaskStatus = (taskIndex) => {
   const index = assignments.value.findIndex(a => a.id === selectedAssignment.value.id);
   if (index !== -1) {
     assignments.value[index].progress = progress;
-    
+    // Синхронизируем отметки задач с источником (иначе сбрасываются при повторном открытии)
+    assignments.value[index].tasks = JSON.parse(JSON.stringify(tasks));
+
     // Если все задачи выполнены, предлагаем завершить задание
     if (progress === 100) {
       notificationStore.info('Все задачи выполнены. Вы можете завершить задание!');
