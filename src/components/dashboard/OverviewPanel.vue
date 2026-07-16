@@ -54,7 +54,7 @@
     </div>
 
     <div class="stat-grid">
-      <article v-for="stat in stats" :key="stat.label" class="stat-tile premium-card premium-card--interactive">
+      <article v-for="stat in stats" :key="stat.label" class="stat-tile premium-card">
         <div class="stat-tile__icon" :class="`stat-tile__icon--${stat.tone}`">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path :d="stat.icon" /></svg>
         </div>
