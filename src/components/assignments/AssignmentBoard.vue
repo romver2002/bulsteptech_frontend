@@ -57,7 +57,7 @@
         </div>
         
         <!-- Прогресс выполнения для заданий в работе -->
-        <div v-if="assignment.status === 'in-progress' && assignment.progress" class="mb-3">
+        <div v-if="assignment.status === 'in-progress' && assignment.progress != null" class="mb-3">
           <div class="w-full bg-discord-dark h-1.5 rounded-full">
             <div 
               class="h-1.5 rounded-full bg-discord-accent" 
@@ -176,11 +176,11 @@
                 :key="index"
                 class="flex items-center"
               >
-                <input 
-                  type="checkbox" 
-                  :id="`task-${index}`" 
+                <input
+                  type="checkbox"
+                  :id="`task-${index}`"
                   v-model="task.completed"
-                  :disabled="isTeacher"
+                  :disabled="isTeacher || selectedAssignment.status === 'completed'"
                   class="mr-2"
                   @change="updateTaskStatus(index)"
                 >
@@ -378,16 +378,20 @@ const viewAssignment = (assignment) => {
   selectedAssignment.value = JSON.parse(JSON.stringify(assignment));
 };
 
+const taskProgress = (tasks = []) => (
+  tasks.length ? Math.round(tasks.filter(t => t.completed).length / tasks.length * 100) : 0
+);
+
 const toggleAssignmentStatus = (assignment) => {
   if (props.isTeacher) return;
   const index = assignments.value.findIndex(a => a.id === assignment.id);
-  
+
   if (index !== -1) {
     const currentAssignment = assignments.value[index];
-    
+
     if (currentAssignment.status === 'to-do') {
       currentAssignment.status = 'in-progress';
-      currentAssignment.progress = 0;
+      currentAssignment.progress = taskProgress(currentAssignment.tasks);
       notificationStore.success('Задание переведено в работу');
     } else if (currentAssignment.status === 'in-progress') {
       currentAssignment.status = 'completed';
@@ -402,7 +406,8 @@ const toggleAssignmentStatus = (assignment) => {
 
 const updateTaskStatus = (taskIndex) => {
   if (!selectedAssignment.value || props.isTeacher) return;
-  
+  if (selectedAssignment.value.status === 'completed') return;
+
   // Обновляем статус задачи
   const tasks = selectedAssignment.value.tasks;
   
@@ -434,11 +439,12 @@ const submitAssignment = () => {
   
   if (index !== -1) {
     if (selectedAssignment.value.status === 'to-do') {
-      // Начинаем выполнение
+      // Начинаем выполнение (сохраняем уже отмеченные задачи в прогрессе)
+      const startProgress = taskProgress(selectedAssignment.value.tasks);
       assignments.value[index].status = 'in-progress';
-      assignments.value[index].progress = 0;
+      assignments.value[index].progress = startProgress;
       selectedAssignment.value.status = 'in-progress';
-      selectedAssignment.value.progress = 0;
+      selectedAssignment.value.progress = startProgress;
       notificationStore.success('Вы начали выполнение задания');
     } else if (selectedAssignment.value.status === 'in-progress') {
       // Завершаем задание
