@@ -874,6 +874,7 @@ onMounted(() => {
 onUnmounted(() => {
   stopDurationTimer();
   stopSpeakerSimulation();
+  streamStore.stopViewerCountTimer();
   document.removeEventListener('click', handleDocumentClick);
   pendingAttachments.value.forEach(revokeAttachmentUrl);
   pendingAttachments.value = [];

@@ -61,7 +61,7 @@ import OverviewPanel from '../components/dashboard/OverviewPanel.vue'
 import { useChannelStore } from '../stores/channels'
 import { useNotificationStore } from '../stores/notification'
 
-const StreamView = defineAsyncComponent(() => import('./StreamView.vue'))
+const StreamView = defineAsyncComponent(() => import('../components/stream/StreamView.vue'))
 const ResourcesView = defineAsyncComponent(() => import('../components/resources/ResourcesView.vue'))
 const AssignmentBoard = defineAsyncComponent(() => import('../components/assignments/AssignmentBoard.vue'))
 const PerformanceAnalytics = defineAsyncComponent(() => import('../components/analytics/PerformanceAnalytics.vue'))
