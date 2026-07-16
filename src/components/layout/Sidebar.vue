@@ -57,8 +57,8 @@
             :key="channel.id"
             type="button"
             class="nav-item"
-            :class="{ 'nav-item--active': currentChannelId === channel.id }"
-            :aria-current="currentChannelId === channel.id ? 'page' : undefined"
+            :class="{ 'nav-item--active': activeChannelId === channel.id }"
+            :aria-current="activeChannelId === channel.id ? 'page' : undefined"
             @click="selectChannel(channel.id)"
           >
             <span class="nav-item__icon">
@@ -76,6 +76,7 @@
                 <path v-else-if="channel.icon === 'report'" d="M7 3h7l4 4v14H7zM14 3v5h4M10 12h5m-5 4h5" />
                 <path v-else-if="channel.icon === 'megaphone'" d="M4 11v3h3l8 4V7l-8 4zm11-2c2 1 2 6 0 7M7 14l1 5h3" />
                 <path v-else-if="channel.icon === 'help'" d="M9.5 9a2.7 2.7 0 1 1 4.4 2.1c-1.2.9-1.9 1.3-1.9 2.9M12 18h.01M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                <path v-else-if="channel.icon === 'chat'" d="M5 5h14a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H9l-4 3V6a1 1 0 0 1 1-1Zm3 4h8M8 12h5" />
                 <path v-else d="M5 5h14v11H9l-4 3z" />
               </svg>
             </span>
@@ -83,7 +84,7 @@
               <strong>{{ channel.name }}</strong>
               <small>{{ channel.description }}</small>
             </span>
-            <span v-if="currentChannelId === channel.id" class="nav-item__active-dot" />
+            <span v-if="activeChannelId === channel.id" class="nav-item__active-dot" />
           </button>
         </div>
       </section>
@@ -122,7 +123,11 @@ const groupMeta = {
   communication: { label: 'Коммуникации', order: 4 }
 }
 
-const currentChannelId = computed(() => channelStore.currentChannelId)
+// Подсветку показываем только когда открыт сам экран каналов (Teacher/Student),
+// а не на страницах Profile/MicroLearning — иначе сайдбар «врёт» о местоположении.
+const activeChannelId = computed(() => (
+  route.name === (userStore.isTeacher ? 'Teacher' : 'Student') ? channelStore.currentChannelId : null
+))
 const userInitials = computed(() => (userStore.username || 'BT').slice(0, 2).toUpperCase())
 const navigationGroups = computed(() => {
   const grouped = new Map()
@@ -137,8 +142,14 @@ const navigationGroups = computed(() => {
 })
 
 function syncViewport() {
-  isMobile.value = window.innerWidth < 1024
-  isOpen.value = !isMobile.value
+  const mobile = window.innerWidth < 1024
+  // Меняем isOpen только при пересечении брейкпоинта, иначе любой resize
+  // (поворот экрана, схлопывание адресной строки, клавиатура) закрывал бы
+  // открытое мобильное меню.
+  if (mobile !== isMobile.value) {
+    isMobile.value = mobile
+    isOpen.value = !mobile
+  }
 }
 
 async function selectChannel(channelId) {

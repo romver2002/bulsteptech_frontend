@@ -82,6 +82,7 @@ const userInitials = computed(() => (userStore.username || 'BT').slice(0, 2).toU
 const roleLabel = computed(() => (userStore.isTeacher ? 'Преподаватель' : 'Студент'))
 const pageContext = computed(() => {
   if (route.name === 'Profile') return 'Личный кабинет'
+  if (route.name === 'MicroLearning') return 'Микрообучение'
   return channelStore.currentChannel?.name || 'Рабочее пространство'
 })
 
