@@ -332,7 +332,8 @@ const closeQuiz = () => {
 const completeQuiz = (result) => {
   const module = modules.value.find((item) => item.id === selectedModule.value.id)
   if (module) {
-    module.progress = 100
+    // Прогресс отражает результат теста, а не «пройдено любой ценой»
+    module.progress = result.total ? Math.round((result.score / result.total) * 100) : 100
     module.score = result.score
     module.completedAt = new Date().toISOString()
     persistProgress()
