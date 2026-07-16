@@ -20,8 +20,6 @@
     </div>
 
     <div class="topbar__actions">
-      <LanguageSwitcher />
-
       <div ref="menuRoot" class="profile-menu">
         <button
           type="button"
@@ -72,7 +70,6 @@ import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '../../stores/user'
 import { useChannelStore } from '../../stores/channels'
-import LanguageSwitcher from '../ui/LanguageSwitcher.vue'
 
 const router = useRouter()
 const route = useRoute()
