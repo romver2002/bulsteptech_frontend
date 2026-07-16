@@ -238,7 +238,16 @@ export const useStreamStore = defineStore('stream', () => {
     return participant.handRaised;
   };
 
-  const toggleParticipantMicrophone = participantId => toggleMicrophone(participantId);
+  const toggleParticipantMicrophone = (participantId) => {
+    const participant = participants.value.find(item => item.id === Number(participantId));
+    if (!participant) return false;
+
+    participant.audioOn = !participant.audioOn;
+    // Глобальный флаг «мой микрофон» меняем только если это сам преподаватель
+    if (participant.id === teacherParticipant.value?.id) isMicrophoneOn.value = participant.audioOn;
+    notificationStore.info(`${participant.name}: микрофон ${participant.audioOn ? 'включён' : 'выключен'}`);
+    return participant.audioOn;
+  };
 
   const toggleParticipantCamera = (participantId) => {
     const participant = participants.value.find(item => item.id === Number(participantId));
